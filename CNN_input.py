@@ -4,9 +4,9 @@ import numpy as np
 import pdb
 from torch.utils.data import Dataset
 #Internal Modules
-import CS230_Final_Project.data.database_management as db
-from CS230_Final_Project.misc.sql_shortcuts import *
-from CS230_Final_Project.misc.utilities import traj_rebuild
+import CS230_Project.data.database_management as db
+from CS230_Project.misc.sql_shortcuts import *
+from CS230_Project.misc.utilities import traj_rebuild
 
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\

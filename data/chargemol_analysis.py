@@ -3,9 +3,9 @@ import sql,os
 from chargemol                              import submit_script
 from ase.io import write
 #Internal Modules
-from CS230_Final_Project.misc.sql_shortcuts import *
-from CS230_Final_Project.misc.utilities     import safeMkDir, check_if_on_sherlock, traj_rebuild
-import CS230_Final_Project.data.database_management as db
+from CS230_Project.misc.sql_shortcuts import *
+from CS230_Project.misc.utilities     import safeMkDir, check_if_on_sherlock, traj_rebuild
+import CS230_Project.data.database_management as db
 
 
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']

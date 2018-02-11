@@ -2,8 +2,8 @@
 import sqlite3, os, pickle, sql, json
 from sql.operators import And
 #Internal Modules
-from CS230_Final_Project.misc.sql_shortcuts import *
-from CS230_Final_Project.misc.utilities import check_if_on_sherlock, sub_binds, replacer
+from CS230_Project.misc.sql_shortcuts import *
+from CS230_Project.misc.utilities import check_if_on_sherlock, sub_binds, replacer
 
 
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']

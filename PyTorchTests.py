@@ -25,8 +25,8 @@ def test_forward():
         Average()
     )
 
-    # storage_directories = ['/Users/michaeljstatt/Documents/CS230_Final_Project/data/storage_directories/150868984252']
-    storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Final_Project/150868984252']
+    # storage_directories = ['/Users/michaeljstatt/Documents/CS230_Project/data/storage_directories/150868984252']
+    storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Project/150868984252']
     dataset = CNNInputDataset(storage_directories)
     return model(dataset[0])
 
@@ -214,8 +214,8 @@ model = nn.Sequential(
     Average()
 )
 
-# storage_directories = ['/Users/michaeljstatt/Documents/CS230_Final_Project/data/storage_directories/150868984252']
-storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Final_Project/150868984252']
+# storage_directories = ['/Users/michaeljstatt/Documents/CS230_Project/data/storage_directories/150868984252']
+storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Project/150868984252']
 dataset = CNNInputDataset(storage_directories)
 y_pred = model(dataset[0])
 print y_pred

@@ -4,7 +4,7 @@ import os
 
 
 def test_get_data(limit = 20):
-    from CS230_Final_Project import CNN_input
+    from CS230_Project import CNN_input
     return CNN_input.CNNInputDataset(limit = limit)
 
 

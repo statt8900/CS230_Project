@@ -7,8 +7,8 @@ import pickle, os, sqlite3
 from copy import deepcopy
 
 #Internal modules
-from CS230_Final_Project.data.database_management import load_row_dictionary
-from CS230_Final_Project.misc.utilities import traj_preparer
+from CS230_Project.data.database_management import load_row_dictionary
+from CS230_Project.misc.utilities import traj_preparer
 
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
