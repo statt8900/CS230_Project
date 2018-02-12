@@ -48,7 +48,6 @@ class Query(object):
         if db_path is None: db_path = self.db_path
 
         command = self._command(constraints = constraints,cols = cols, table = table)
-        print command
         if self.verbose == True: sub_binds(command)
         return sqlexecute(*command,db_path=db_path, row_factory=row_factory)
 
@@ -162,13 +161,16 @@ def update_chargemol():
         directories = os.listdir(chargemol_folder)
         already_updated = Query(constraints = [PMG_Entries.chargemol ==1]).query_col(PMG_Entries.material_id)
         fin_directories = filter(lambda x: os.path.exists(os.path.join(chargemol_folder,x,'bonds.json')) and x not in already_updated,directories)
-        sqlexecute('UPDATE PMG_Entries set chargemol = 1 where material_id in {0} and chargemol = 0'.format(tuple(fin_directories)))
-        bonds_json_list = map(read_bonds_json, fin_directories)
-        for bonds_json, material_id in zip(bonds_json_list, fin_directories):
-            print 'updating bonds.json for material_id: {0}'.format(material_id)
-            dump_bonds = json.dumps(bonds_json)
-            updateDB('bonds_json', 'material_id', material_id, dump_bonds,'PMG_Entries')
-        return 1
+        if len(fin_directories)>0:
+            bonds_json_list = map(read_bonds_json, fin_directories)
+            for i, bonds_json, material_id in enumerate(zip(bonds_json_list, fin_directories)):
+                if i%100:
+                    print 'Loaded {0} out of {1}'.format(i, len(bonds_json_list))
+                dump_bonds = json.dumps(bonds_json)
+                sqlexecute("UPDATE PMG_Entries SET chargemol= ? and bonds_json = ? WHERE material_id = ?",[1,dump_bonds,ID],db_path=db_path)
+            return 1
+        else:
+            print 'No New Directories'
     else:
         print 'Can Only update DB on sherlock'
         return 0
