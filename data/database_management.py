@@ -168,7 +168,7 @@ def update_chargemol():
                 if i%100==0:
                     print 'Loaded {0} out of {1}'.format(i, len(bonds_json_list))
                 dump_bonds = json.dumps(bonds_json)
-                sqlexecute("UPDATE PMG_Entries SET chargemol= ? and bonds_json = ? WHERE material_id = ?",[1,dump_bonds,material_id],db_path=db_path)
+                sqlexecute("UPDATE PMG_Entries SET chargemol= ?, bonds_json = ? WHERE material_id = ?",[1,dump_bonds,material_id],db_path=db_path)
             print 'Loaded a Total of {0} new bonds.json\'s'.format(len(bonds_json_list))
             return 1
         else:
