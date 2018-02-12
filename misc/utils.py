@@ -34,3 +34,7 @@ def traj_preparer(atoms):
 
 def traj_rebuild(buffer_data):
 	return pickle.loads(str(buffer_data))
+
+def flatten(lol): return [item for sublist in lol for item in sublist] #flattens a List Of Lists to a list
+
+negate   = lambda x: -x
