@@ -168,7 +168,7 @@ def update_chargemol():
             print 'updating bonds.json for material_id: {0}'.format(material_id)
             dump_bonds = json.dumps(bonds_json)
             updateDB('bonds_json', 'material_id', material_id, dump_bonds,'PMG_Entries')
-        return fin_directories
+        return 1
     else:
         print 'Can Only update DB on sherlock'
         return 0

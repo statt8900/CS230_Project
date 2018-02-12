@@ -1,10 +1,10 @@
 #External Modules
-import sql,os
+import sql,os, subprocess
 from chargemol                              import submit_script
 from ase.io import write
 #Internal Modules
 from CS230_Project.misc.sql_shortcuts import *
-from CS230_Project.misc.utilities     import safeMkDir, check_if_on_sherlock, traj_rebuild
+from CS230_Project.misc.utils     import safeMkDir, check_if_on_sherlock, traj_rebuild
 import CS230_Project.data.database_management as db
 
 
@@ -25,14 +25,14 @@ def meta_bond_analyze(constraints = [], limit = 20):
     limit       :: Int, number of jobs to be randomly sampled
     """
     assert check_if_on_sherlock, 'Can only run chargemol on sherlock'
-    fin_dirs = db.update_chargemol()
-    default_constraints = [PMG_Entries.chargemol==0, NotIn(PMG_Entries.material_id, fin_dirs)]
+    db.update_chargemol()
+    running_ids = get_running_materials_id()
+    default_constraints = [PMG_Entries.chargemol==0, NotIn(PMG_Entries.material_id, running_ids)]
     constraints += default_constraints
 
     query = db.Query(constraints = constraints, cols = [PMG_Entries.material_id, PMG_Entries.atoms_obj], order = Random(), limit = limit)
     mat_ids, atoms_obj_pickle = zip(*query.query())
     atoms_obj_list = map(traj_rebuild, atoms_obj_pickle)
-
     for mat_id, atoms_obj  in zip(mat_ids,atoms_obj_list):
         pth = os.path.join(chargemol_folder,mat_id)
         safeMkDir(pth)
@@ -41,3 +41,10 @@ def meta_bond_analyze(constraints = [], limit = 20):
             write(pth+'/final.traj',atoms_obj)
         os.chdir(pth)
         submit_script(pth,pth+'/final.traj')
+
+
+def get_running_materials_id():
+    all_current_jobs            = subprocess.check_output(['squeue','-o','%Z']).split('\n')
+    jobs_in_chargemol_folder    = filter(lambda dir_curr: chargemol_folder in dir_curr, all_current_jobs)
+    currently_running_materials_id = map(os.path.basename, jobs_in_chargemol_folder)
+    return currently_running_materials_id
