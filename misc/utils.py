@@ -37,4 +37,8 @@ def traj_rebuild(buffer_data):
 
 def flatten(lol): return [item for sublist in lol for item in sublist] #flattens a List Of Lists to a list
 
+def print_time(floatHours):
+	intHours = int(floatHours)
+	return "%02d:%02d" % (intHours,(floatHours-intHours)*60)
+
 negate   = lambda x: -x

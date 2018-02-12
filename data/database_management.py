@@ -163,17 +163,20 @@ def update_chargemol():
         fin_directories = filter(lambda x: os.path.exists(os.path.join(chargemol_folder,x,'bonds.json')) and x not in already_updated,directories)
         if len(fin_directories)>0:
             bonds_json_list = map(read_bonds_json, fin_directories)
-            for i, bonds_json, material_id in enumerate(zip(bonds_json_list, fin_directories)):
-                if i%100:
+            for bonds_json, material_id in zip(bonds_json_list, fin_directories):
+                i = fin_directories.index(material_id)
+                if i%100==0:
                     print 'Loaded {0} out of {1}'.format(i, len(bonds_json_list))
                 dump_bonds = json.dumps(bonds_json)
-                sqlexecute("UPDATE PMG_Entries SET chargemol= ? and bonds_json = ? WHERE material_id = ?",[1,dump_bonds,ID],db_path=db_path)
+                sqlexecute("UPDATE PMG_Entries SET chargemol= ? and bonds_json = ? WHERE material_id = ?",[1,dump_bonds,material_id],db_path=db_path)
+            print 'Loaded a Total of {0} new bonds.json\'s'.format(len(bonds_json_list))
             return 1
         else:
             print 'No New Directories'
     else:
         print 'Can Only update DB on sherlock'
         return 0
+
 
 
 ###########################
