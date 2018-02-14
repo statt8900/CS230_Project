@@ -14,3 +14,4 @@ def main():
 
 if __name__ == '__main__':
     CNN_Input = main()
+    print CNN_Input[0]

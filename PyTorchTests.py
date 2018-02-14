@@ -134,7 +134,6 @@ class ChemConvFunction(Function):
         ctx.filters = filters
         ctx.ordered_connection_matrices_save = ordered_connection_matrices_save
         ctx.one_hots = one_hots
-
         return output
 
     @staticmethod
@@ -192,7 +191,7 @@ class ChemConv(nn.Module):
         super(ChemConv, self).__init__()
         self.in_depth = in_depth
         self.out_depth = out_depth
-
+        import pdb; pdb.set_trace()
         ######FILTER DIMENSION#########
         filter_dimension = 13
         self.filters = nn.Parameter(torch.Tensor(out_depth,filter_dimension,in_depth+2))
@@ -243,7 +242,7 @@ def order_input(node_connection_matrix, atom_index_vector, filt):
     assert sum_check == sum(ordered_atom_index_vector) # these vectors should contain the same indices in a possibly different order, so they should have the same sum
     return output, ordered_atom_index_vector
 
-def make_convlayer_input_matrix(connectivity,node_feature_matrix):
+def make_convlayer_input_matrix(connectivity_tensor,node_feature_matrix):
     """
     Takes a connectivity list and node_feature matrix to produce an input list
     (of np arrays) for the conv layer
@@ -252,6 +251,8 @@ def make_convlayer_input_matrix(connectivity,node_feature_matrix):
     node_feature :: NxF matrix of features
     output ::[?xF+2] (list of length N)
     """
+
+    con_mat = torch.matmul(connectivity_tensor.transpose(1,2),node_feature_matrix)
     output = []
     atom_index_vectors = []
     for i,connections in enumerate(connectivity):
@@ -279,16 +280,18 @@ def make_convlayer_input_matrix(connectivity,node_feature_matrix):
 mode = 'chem'
 
 if mode == 'chem':
+    import pdb; pdb.set_trace()
     model = nn.Sequential(
         ChemConv(2,5),
         nn.ReLU(inplace = True),
         nn.Linear(5,1, bias=True),
         Average()
     )
+    model.test = 'Hello'
 
     # storage_directories = ['/Users/michaeljstatt/Documents/CS230_Final_Project/data/storage_directories/150868984252']
-    storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Final_Project/150868984252']
-    dataset = CNNInputDataset(storage_directories)
+    # storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Final_Project/150868984252']
+    dataset = CNNInputDataset(limit = 10)
 
 
     ### See if forward pass causes an error
