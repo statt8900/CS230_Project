@@ -32,6 +32,26 @@ class Average(nn.Module):
     def forward(self, input):
         return AverageFunction.apply(input)
 
+class ChemResBlockBrian(nn.Module):
+    def __init__(self, num_convs, depth, filter_length, activation_fn):
+        super(ChemResBlock, self).__init__()
+        self.conv_layers = []
+        self.depth = depth
+        self.filter_length = filter_length
+        self.activation_fn = activation_fn
+        for i in range(num_convs):
+            self.conv_layers.append(ChemConv(self.depth, self.depth, self.filter_length))
+
+    def forward(self, input):
+        output = input
+        for conv_layer in self.conv_layers:
+            output = conv_layer(output)
+            output = self.activation_fn(output)
+            output = conv_layer(output)
+            output += input
+            output = self.activation_fn(output)
+        return output
+
 class ChemResBlock(nn.Module):
     def __init__(self, num_convs, depth, filter_length, activation_fn):
         super(ChemResBlock, self).__init__()

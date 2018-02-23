@@ -277,21 +277,19 @@ def make_convlayer_input_matrix(connectivity_tensor,node_feature_matrix):
 # In[477]:
 
 ##### ChemConv Test
-mode = 'chem'
+mode = 'linear'
 
 if mode == 'chem':
     import pdb; pdb.set_trace()
     model = nn.Sequential(
-        ChemConv(2,5),
+        ChemConv(2,10),
         nn.ReLU(inplace = True),
-        nn.Linear(5,1, bias=True),
+        nn.Linear(10,1, bias=True),
         Average()
     )
     model.test = 'Hello'
 
-    # storage_directories = ['/Users/michaeljstatt/Documents/CS230_Final_Project/data/storage_directories/150868984252']
-    # storage_directories = ['/Users/brohr/Documents/Stanford/Research/scripts/ML/CS230_Final_Project/150868984252']
-    dataset = CNNInputDataset(limit = 10)
+    dataset = CNNInputDataset(limit=10)
 
 
     ### See if forward pass causes an error
@@ -300,15 +298,16 @@ if mode == 'chem':
     node_feature_matrix_var = Variable(torch.from_numpy(node_feature_matrix))
     input_tup = (node_feature_matrix_var, connectivity)
 
-    y_pred = model(input_tup)
+    # y_pred = model(input_tup)
 
 
 
     #### See if backward pass causes an error
-    y_actual = Variable(-0.35*torch.ones((1)))
-    loss_fn = nn.MSELoss()
+    # y_actual = Variable(-0.35*torch.ones((1)))
+    # loss_fn = nn.MSELoss()
+    # loss = loss_fn(y_pred, y_actual)
 
-    loss = loss_fn(y_pred, y_actual)
+
 
 
     # eps = 0.001
@@ -320,9 +319,9 @@ if mode == 'chem':
     # loss_eps = loss_fn(y_pred_eps, y_actual)
     # print (loss_eps.data[0] - loss.data[0])/eps
 
-    p=1
-    params = store_params(model)
-    loss.backward()
+    # p=1
+    # params = store_params(model)
+    # loss.backward()
 
 
     ### Gradient checking
@@ -338,22 +337,42 @@ if mode == 'chem':
 
 
     ### try to overfit one data point
+    loss_fn = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr = 5e-4, momentum=0.9)
 
-    optimizer = torch.optim.SGD(model.parameters(), lr = 1e-4, momentum=0.9)
-
-    num_epochs = 500
+    num_epochs = 50
     loss_history = []
-    for i in range(num_epochs):
-        y_pred = model(input_tup)
-        loss = loss_fn(y_pred, y_actual)
-        loss_history.append(loss.data[0])
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    epoch_loss_history = []
+    for epoch in range(num_epochs):
+        print 'Beginning Epoch {}/{}'.format(epoch+1, num_epochs)
+        for i in range(len(dataset)):
+            tup = dataset[i]
+            if i == 25:
+                optimizer.lr = 1e-4
+
+            # if i%2 == 0:
+            #     tup = dataset[9]
+            # else:
+            #     tup = dataset[8]
+
+            (connectivity, node_feature_matrix, energy) = tup
+            node_feature_matrix_var = Variable(torch.from_numpy(node_feature_matrix))
+            input_tup = (node_feature_matrix_var, connectivity)
+            y_actual = Variable(energy*torch.ones(1))
+
+            y_pred = model(input_tup)
+            loss = loss_fn(y_pred, y_actual)
+            loss_history.append(loss.data[0])
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            # print loss.data[0]
+        epoch_loss_history.append(np.mean(np.array(loss_history[-10:])))
 
     print loss_history[-1]
-    plt.plot(range(num_epochs), loss_history)
-    plt.xlabel('Number of times the model has seen the same dang structure')
+    # plt.plot(range(num_epochs*len(dataset)), loss_history)
+    plt.plot(range(num_epochs), epoch_loss_history)
+    plt.xlabel('Iteration')
     plt.ylabel('Mean square error')
     plt.show()
 
@@ -430,10 +449,44 @@ class MyLinearModule(nn.Module):
         # See the autograd section for explanation of what happens here.
         return MyLinearFunction.apply(input, self.weight, self.bias)
 
+class MyLinearModule2(nn.Module):
+    def __init__(self, input_features, output_features, bias=True):
+        super(MyLinearModule2, self).__init__()
+        self.input_features = input_features
+        self.output_features = output_features
+
+        # nn.Parameter is a special kind of Variable, that will get
+        # automatically registered as Module's parameter once it's assigned
+        # as an attribute. Parameters and buffers need to be registered, or
+        # they won't appear in .parameters() (doesn't apply to buffers), and
+        # won't be converted when e.g. .cuda() is called. You can use
+        # .register_buffer() to register buffers.
+        # nn.Parameters can never be volatile and, different than Variables,
+        # they require gradients by default.
+        self.weight = nn.Parameter(torch.Tensor(output_features, input_features))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(output_features))
+        else:
+            # You should always register all possible parameters, but the
+            # optional ones can be None if you want.
+            self.register_parameter('bias', None)
+
+        # Not a very smart way to initialize weights
+        self.weight.data.uniform_(-0.1, 0.1)
+        if bias is not None:
+            self.bias.data.uniform_(-0.1, 0.1)
+
+    def forward(self, input):
+        # See the autograd section for explanation of what happens here.
+        output = input.matmul(self.weight.t())
+        if self.bias is not None:
+            output += self.bias.unsqueeze(0).expand_as(output)
+        return output
+
 
 if mode == 'linear':
     inp = Variable(torch.randn((1,10)))
-    model = MyLinearModule(10,1)
+    model = MyLinearModule2(10,1)
     y_pred = model(inp)
     y_actual = Variable(1.3*torch.ones((1)))
     loss_fn = nn.MSELoss()

@@ -13,6 +13,7 @@ from CS230_Project.misc.utils import traj_rebuild
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
+from mendeleev import Element
 
 #Sorting Functions
 bo_over_dis = lambda distance, bondorder: bondorder/distance
@@ -62,7 +63,31 @@ class CNNInputDataset(Dataset):
             node_feature_matrix[i] = self.get_atom_features(atom)
         return node_feature_matrix
 
-    def get_atom_features(self, atom):
+
+    def get_atom_features(self, atom, dbpath):
+        element = Element(atom.symbol)
+        attributes = ['en_pauling'
+                        ,'atomic_radius'
+                        ,'dipole_polarizability'
+                        ,'electron_affinity'
+                        ,'melting_point'
+                        ,'boiling_point'
+                        ,'evaporation_heat'
+                        ,'fusion_heat'
+                        ,'heat_of_formation'
+                        ,'covalent_radius_bragg'
+                        ,'period'
+                        ,'group_id'
+                        ]
+        features = torch.zeros(len(attributes))
+
+        for i, attr in enumerate(attributes):
+            features[i] = element.__getattr__(attr)
+
+        return features
+
+
+    def get_row_col(self, atom):
         """
         Returns numpy array of atom get_atom_features
         1st iteration: Feature for 1 atom is [period, group]

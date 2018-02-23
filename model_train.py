@@ -65,36 +65,39 @@ class PyTorchTrainer(object):
 
 
 def train():
-        #Model Iterations/Sampling Parameters
-        num_epochs      = 30
-        limit           = 50
-        batch_size      = 10
-        sampler         = SubsetRandomSampler(range(limit))
-        #Optimizer parameters
-        learning_rate   = 1e-3
-        momentum        = 0.9
-        #Model paramters
-        model = nn.Sequential(
-            conv.SetConnectivity(),
-            conv.ChemConv(2,100,13),
-            conv.ChemResBlock(3,100,13,nn.ReLU(inplace = True)),
-            nn.Linear(100,30, bias=True),
-            nn.ReLU(inplace = True),
-            nn.Linear(30,1, bias=True),
-            conv.Average()
-        )
+    #Model Iterations/Sampling Parameters
+    num_epochs      = 10
+    limit           = 10
+    batch_size      = 10
+    sampler         = SubsetRandomSampler(range(limit))
+    #Optimizer parameters
+    learning_rate   = 1e-3
+    momentum        = 0.9
+    #Model paramters
+    model = nn.Sequential(
+        conv.SetConnectivity(),
+        conv.ChemConv(2,100,13),
+        conv.ChemResBlock(3,100,13,nn.ReLU(inplace = True)),
+        nn.Linear(100,30, bias=True),
+        nn.ReLU(inplace = True),
+        nn.Linear(30,1, bias=True),
+        conv.Average()
+    )
 
-        #Create necessary objects for input
-        dataset     = CNNInputDataset(limit = limit)
-        dataloader  = DataLoader(dataset,
-                                 sampler=SubsetRandomSampler(range(limit)),
-                                 batch_size=batch_size
-                                 )
-        optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate, momentum=momentum)
-        loss_fn = torch.nn.MSELoss()
-        #Create Trainer object
+    #Create necessary objects for input
+    dataset     = CNNInputDataset(limit = limit)
+    dataloader  = DataLoader(dataset,
+                             sampler=SubsetRandomSampler(range(limit)),
+                             batch_size=batch_size
+                             )
+    optimizer = torch.optim.SGD(model.parameters(), lr = learning_rate, momentum=momentum)
+    loss_fn = torch.nn.MSELoss()
+    #Create Trainer object
 
-        trainer = PyTorchTrainer(dataset, dataloader, model, optimizer,loss_fn)
+    trainer = PyTorchTrainer(dataset, dataloader, model, optimizer,loss_fn)
 
-        #Train on the data
-        trainer.train_epochs(num_epochs)
+    #Train on the data
+    trainer.train_epochs(num_epochs)
+
+if __name__ == '__main__':
+    train()

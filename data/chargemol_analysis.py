@@ -18,6 +18,37 @@ assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 
 project_folder = os.environ['CS230_Project_Folder']
 chargemol_folder = os.environ['CS230_chargemol_folder']
+#
+# time_dict = {'low':.5,'mid':1,'high':2}
+#
+# def submit_chargemol(pth,traj=None,code='gpaw',quality='low'):
+#     sub_pth = os.path.join(pth,'sub_chargemol.')
+#
+#     if traj is None:
+#         traj = glob.glob(os.path.join(pth,'*.traj'))[0]
+#
+#     subpy ='\n'.join(['import chargemol'
+#                     ,"chargemol.bond_analyze('%s','%s','%s','%s')\n"%(pth,traj,code,quality)])
+#
+#     subsh = '\n'.join(['#!/bin/bash'
+#                     ,'#SBATCH -p iric,owners'
+#                     ,'#SBATCH --time=%s:00'%(print_time(time_dict[quality]))
+#                     ,'#SBATCH --mem-per-cpu=4000'
+#                     ,'#SBATCH --error=err.log'
+#                     ,'#SBATCH --output=opt.log'
+#                     ,'#SBATCH --nodes=1'
+#                     ,'#SBATCH --ntasks-per-node=16'
+#                     ,"NTASKS=`echo $SLURM_TASKS_PER_NODE|tr '(' ' '|awk '{print $1}'`"
+#                     ,"NNODES=`scontrol show hostnames $SLURM_JOB_NODELIST|wc -l`"
+#                     ,'NCPU=`echo " $NTASKS * $NNODES " | bc`'
+#                     ,'source /scratch/users/ksb/gpaw/paths.bash'
+#                     ,'mpirun -n $NCPU gpaw-python sub_chargemol.py'])
+#     with open(sub_pth+'sh','w') as f: f.write(subsh)
+#     with open(sub_pth+'py','w') as f: f.write(subpy)
+#     if not os.path.exists(os.path.join(pth,'bonds.json')):
+#         os.chdir(pth)
+#         map(lambda file_curr: os.chmod(file_curr,0777), os.walk(os.getcwd()).next()[2])
+#         os.system('sbatch sub_chargemol.sh')
 
 # time_dict = {'low':.5,'mid':1,'high':2}
 #
