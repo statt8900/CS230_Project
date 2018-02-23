@@ -34,7 +34,7 @@ class Average(nn.Module):
 
 class ChemResBlockBrian(nn.Module):
     def __init__(self, num_convs, depth, filter_length, activation_fn):
-        super(ChemResBlock, self).__init__()
+        super(ChemResBlockBrian, self).__init__()
         self.conv_layers = []
         self.depth = depth
         self.filter_length = filter_length

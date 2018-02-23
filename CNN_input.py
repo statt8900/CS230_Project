@@ -13,7 +13,7 @@ from CS230_Project.misc.utils import traj_rebuild
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
-from mendeleev import Element
+from mendeleev import element
 
 #Sorting Functions
 bo_over_dis = lambda distance, bondorder: bondorder/distance
@@ -30,7 +30,16 @@ class CNNInputDataset(Dataset):
         self.query = db.Query(constraints = constraints, limit = limit)
         self.output_dict = self.query.query_dict(cols = ['*'])
         self.filter_length = filter_length
-
+        self.attributes = ['en_pauling'
+                        ,'dipole_polarizability'
+                        ,'electron_affinity'
+                        ,'melting_point'
+                        ,'boiling_point'
+                        ,'heat_of_formation'
+                        ,'covalent_radius'
+                        ,'period'
+                        ,'group_id'
+                        ]
     def __getitem__(self, index):
         return self.row_dict_to_CNN_input(self.output_dict[index])
 
@@ -58,32 +67,21 @@ class CNNInputDataset(Dataset):
         TO CHANGE: number_of_features = 2 (period,group)
         """
 
-        node_feature_matrix = torch.zeros(len(atoms),2)
+        node_feature_matrix = torch.zeros(len(atoms), len(self.attributes))
         for (i,atom) in enumerate(atoms):
             node_feature_matrix[i] = self.get_atom_features(atom)
         return node_feature_matrix
 
 
-    def get_atom_features(self, atom, dbpath):
-        element = Element(atom.symbol)
-        attributes = ['en_pauling'
-                        ,'atomic_radius'
-                        ,'dipole_polarizability'
-                        ,'electron_affinity'
-                        ,'melting_point'
-                        ,'boiling_point'
-                        ,'evaporation_heat'
-                        ,'fusion_heat'
-                        ,'heat_of_formation'
-                        ,'covalent_radius_bragg'
-                        ,'period'
-                        ,'group_id'
-                        ]
-        features = torch.zeros(len(attributes))
+    def get_atom_features(self, atom):
+        element_obj = element(atom.symbol)
+        features = torch.zeros(len(self.attributes))
 
-        for i, attr in enumerate(attributes):
-            features[i] = element.__getattr__(attr)
-
+        for i, attr in enumerate(self.attributes):
+            if element_obj.__getattribute__(attr) == None:
+                print atom.symbol
+                print attr
+            features[i] = element_obj.__getattribute__(attr)
         return features
 
 
