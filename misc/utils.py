@@ -1,5 +1,11 @@
 import os, pickle, sqlite3
 
+
+
+################################################################################
+"""This module contains helpful functions for the entire project"""
+################################################################################
+
 def check_if_on_sherlock():
     hostname = os.environ['HOSTNAME'].lower()
     return 'sh'in hostname or  'gpu-' in hostname

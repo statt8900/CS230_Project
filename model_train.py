@@ -9,37 +9,43 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn as nn
 from time import time
 
+################################################################################
+"""
+This module contains the PyTorchTrainer object used to train models
+"""
+################################################################################
+
 class PyTorchTrainer(object):
     def __init__(self, dataset, dataloader, model, optimizer, loss_fn):
-        self.dataset = dataset
-        self.model = model
+        self.dataset   = dataset
+        self.model     = model
         self.optimizer = optimizer
-        self.loss_fn = loss_fn
-
+        self.loss_fn   = loss_fn
 
         self.epoch_loss_history = []
         self.old_time = None
-        self.epoch = 0
+        self.epoch    = 0
 
     def train_epochs(self, num_epochs):
-        self.start = time()
+        self.start     = time()
         self.curr_time = self.start
         for i in range(num_epochs):
             print 'Starting epoch {0}/{1}'.format(self.epoch, num_epochs)
             self.train_epoch()
         self.plot_loss(num_epochs)
+
     def train_epoch(self):
         self.epoch += 1
         losses = []
         for tup in self.dataset:
-            (node_feature_matrix, connectivity_tensor, bond_property_tensor, e_form) = tup
+            (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form) = tup
             y_actual = Variable(e_form*torch.ones(1))
 
-            node_feature_matrix_var     = Variable(node_feature_matrix)
+            node_property_tensor_var     = Variable(node_property_tensor)
             connectivity_tensor_var     = Variable(connectivity_tensor)
             bond_property_tensor_var    = Variable(bond_property_tensor)
 
-            input_tup = (node_feature_matrix_var, connectivity_tensor_var, bond_property_tensor_var)
+            input_tup = (node_property_tensor_var, connectivity_tensor_var, bond_property_tensor_var)
             y_out     = self.model(input_tup)
 
             loss = self.loss_fn(y_out, y_actual)
@@ -56,19 +62,20 @@ class PyTorchTrainer(object):
         print 'Epoch Time: {}'.format(self.curr_time - self.old_time)
         print 'MSE Error = {}'.format(self.epoch_loss_history[-1])
         print '##########################'
+
     def plot_loss(self,num_epochs):
         plt.plot(range(num_epochs), self.epoch_loss_history)
         plt.xlabel('Epoch')
         plt.ylabel('Mean square error (eV/atom) squared')
-        plt.title('Final MSE = {0}'.format(self.epoch_loss_history[-1]))
+        plt.title('Final MSE = %1.3f'%(self.epoch_loss_history[-1]))
         plt.show()
 
 
 def train():
     #Model Iterations/Sampling Parameters
     num_epochs      = 30
-    limit           = 50
-    batch_size      = 10
+    limit           = 10
+    batch_size      = 10        # not implemented yet
     sampler         = SubsetRandomSampler(range(limit))
     #Optimizer parameters
     learning_rate   = 1e-4
@@ -76,8 +83,8 @@ def train():
     #Model paramters
     model = nn.Sequential(
         conv.SetConnectivity(),
-        conv.ChemConv(9,100,13),
-        conv.ChemResBlockBrian(3,100,13,nn.ReLU(inplace = True)),
+        conv.ChemConv(7,100,13),
+        conv.ChemResBlock(3,100,13,nn.ReLU(inplace = True)),
         nn.Linear(100,30, bias=True),
         nn.ReLU(inplace = True),
         nn.Linear(30,1, bias=True),
@@ -85,15 +92,15 @@ def train():
     )
 
     #Create necessary objects for input
-    dataset     = CNNInputDataset(limit = limit)
-    dataloader  = DataLoader(dataset,
+    dataset    = CNNInputDataset(limit = limit)
+    dataloader = DataLoader(dataset,
                              sampler=SubsetRandomSampler(range(limit)),
                              batch_size=batch_size
                              )
     optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
     loss_fn = torch.nn.MSELoss()
-    #Create Trainer object
 
+    #Create Trainer object
     trainer = PyTorchTrainer(dataset, dataloader, model, optimizer,loss_fn)
 
     #Train on the data
