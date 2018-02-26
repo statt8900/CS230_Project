@@ -4,16 +4,23 @@ import numpy as np
 import pdb
 import torch
 from torch.utils.data import Dataset, DataLoader
+from mendeleev import element
+
 #Internal Modules
 import CS230_Project.data.database_management as db
 from CS230_Project.misc.sql_shortcuts import *
 from CS230_Project.misc.utils import traj_rebuild
 
+################################################################################
+"""This module contains classes for gathering data for model training"""
+################################################################################
+
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
 
-#Sorting Functions
+
+#Sorting Functions for determining bond importance
 bo_over_dis = lambda distance, bondorder: bondorder/distance
 
 class CNNInputDataset(Dataset):
@@ -28,6 +35,13 @@ class CNNInputDataset(Dataset):
         self.query = db.Query(constraints = constraints, limit = limit)
         self.output_dict = self.query.query_dict(cols = ['*'])
         self.filter_length = filter_length
+        self.attributes = ['en_pauling'
+                          ,'dipole_polarizability'
+                          ,'melting_point'
+                          ,'boiling_point'
+                          ,'covalent_radius'
+                          ,'period'
+                          ,'group_id']
 
     def __getitem__(self, index):
         return self.row_dict_to_CNN_input(self.output_dict[index])
@@ -41,44 +55,43 @@ class CNNInputDataset(Dataset):
         and produce a connectivity matrix
         """
         e_form              = row_dict['formation_energy_per_atom']
+
         #Extract the connectivity
         connectivity_tensor, bond_property_tensor = self.row_dict_to_connectivity_tensors(row_dict)
+
         #Get the node feature matrix
         atoms_obj           = traj_rebuild(row_dict['atoms_obj'])
-        node_feature_matrix = self.atoms_to_node_features(atoms_obj)
-        return (node_feature_matrix, connectivity_tensor, bond_property_tensor, e_form)
+        node_property_tensor = self.atoms_to_node_properties(atoms_obj)
+        return (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form)
 
-    def atoms_to_node_features(self, atoms):
+    def atoms_to_node_properties(self, atoms):
         """
         Converts atoms object into a numpy array
-        node_feature_matrix is shape (num_atoms,number_of_features)
-
-        TO CHANGE: number_of_features = 2 (period,group)
+        node_property_tensor is shape (num_atoms,number_of_properties)
         """
 
-        node_feature_matrix = torch.zeros(len(atoms),2)
+        node_property_tensor = torch.zeros(len(atoms), len(self.attributes))
         for (i,atom) in enumerate(atoms):
-            node_feature_matrix[i] = self.get_atom_features(atom)
-        return node_feature_matrix
+            node_property_tensor[i] = self.get_atom_properties(atom)
+        return node_property_tensor
 
-    def get_atom_features(self, atom):
-        """
-        Returns numpy array of atom get_atom_features
-        1st iteration: Feature for 1 atom is [period, group]
-        """
-        period = [0,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3
-                  ,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
-                  ,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
-                  ,6,6,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
-                  ,7,7,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
 
-        group =   [0,1,18,1,2,13,14,15,16,17,18,1,2,13,14,15,16,17,18
-                  ,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
-                  ,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
-                  ,1,2,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
-                  ,1,2,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
-        atomic_num = atom.number
-        return torch.Tensor([period[atomic_num],group[atomic_num]])
+    def get_atom_properties(self, atom):
+        """
+        returns an PyTorch tensor of length len(self.attributes)
+        the features are pulled from mendeleev element object
+        (See the attributes member data in __init__ for full list of attributes)
+        """
+        element_obj = element(atom.symbol)
+        properties = torch.zeros(len(self.attributes))
+
+        for i, attr in enumerate(self.attributes):
+            if element_obj.__getattribute__(attr) == None:
+                print atom.symbol
+                print attr
+            else:
+                properties[i] = element_obj.__getattribute__(attr)
+        return properties
 
     @staticmethod
     def _get_sorted_bond_tensor(bond_dict, bond_function = bo_over_dis):
@@ -117,8 +130,7 @@ class CNNInputDataset(Dataset):
         connectivity_tensor     :: Type     = pytorch tensor
                                 :: Shape    = (n_atoms, n_atoms, filter_length)
         Description: Each atom gets a hot_one tensor that can be dotted with the
-        node_feature_matrix to create a matrix that can be convulved with a filter
-
+        node_property_tensor to create a matrix that can be convulved with a filter
 
         bond_property_tensor    :: Type     = pytorch tensor
                                 :: Shape    = (n_atoms, filter_length, 2)
@@ -132,7 +144,6 @@ class CNNInputDataset(Dataset):
 
         #Get number of atoms and initialize each variable
         n_atoms = row_dict['num_atoms']
-        #n_atoms
         bond_property_tensor = torch.zeros(n_atoms,self.filter_length,2)
         count = torch.ones(n_atoms).int()
         ind_arrays = torch.zeros(n_atoms,self.filter_length).int()
@@ -157,7 +168,6 @@ class CNNInputDataset(Dataset):
 
         return connectivity_tensor, bond_property_tensor
 
-
     @staticmethod
     def get_one_hot(atom_index_vector, N, filter_length):
         # N is number of atoms in this case
@@ -165,3 +175,26 @@ class CNNInputDataset(Dataset):
         for (location, atom_index) in enumerate(atom_index_vector):
             output[atom_index][location] += 1
         return output
+
+
+###########################
+#Archived Code
+#--------------------------
+# def get_row_col(self, atom):
+#     """
+#     Returns numpy array of atom get_atom_properties
+#     1st iteration: Feature for 1 atom is [period, group]
+#     """
+#     period = [0,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3
+#               ,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4
+#               ,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
+#               ,6,6,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6
+#               ,7,7,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]
+#
+#     group =   [0,1,18,1,2,13,14,15,16,17,18,1,2,13,14,15,16,17,18
+#               ,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+#               ,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+#               ,1,2,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+#               ,1,2,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+#     atomic_num = atom.number
+#     return torch.Tensor([period[atomic_num],group[atomic_num]])
