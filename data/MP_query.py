@@ -10,9 +10,16 @@ from copy import deepcopy
 from CS230_Project.data.database_management import load_row_dictionary
 from CS230_Project.misc.utils import traj_preparer
 
+################################################################################
+"""This module contains functions to query the Materials Project to generate our
+dataset"""
+################################################################################
+
+#Check for required enviromental variables
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
+
 
 ###########################
 # Materials Project Queries
@@ -29,7 +36,7 @@ def query_all_of_materials_project():
     mp_rest = MPRester(API_key)
 
     #properties useful for project
-    useful_properties =   [u'energy'
+    useful_properties =     [u'energy'
                             ,u'band_gap'
                             ,u'e_above_hull'
                             ,u'elements'
@@ -88,7 +95,7 @@ def query_all_of_materials_project():
 
 def convert_cif_to_ase(cif_string):
     """
-    Convertse PMG cif string format to an ase Atoms object
+    Convert PMG cif string format to an ase Atoms object
     """
     structure = CifParser.from_string(cif_string).get_structures()[-1]
     return AseAtomsAdaptor.get_atoms(structure)
@@ -119,9 +126,3 @@ def load_database_from_mat_proj_pickle():
             load_row_dictionary(new_row)
         except sqlite3.OperationalError:
             pass
-
-# def main():
-#     load_database_from_mat_proj_pickle()
-#
-# if __name__ == '__main__':
-#     main()

@@ -1,21 +1,29 @@
 #External modules
 import sqlite3, os, pickle, sql, json
-from sql.operators import And
 #Internal Modules
 from CS230_Project.misc.sql_shortcuts import *
 from CS230_Project.misc.utils import check_if_on_sherlock, sub_binds, replacer
 
+################################################################################
+"""
+This module contains functions to query and update the input database, which
+contains our dataset
+"""
+################################################################################
 
+#Check for required enviromental variables
 necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
 assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
 
+#Set enviromental variable paths
 project_folder          = os.environ['CS230_Project_Folder']
 db_path                 = os.environ['CS230_database_path']
 if check_if_on_sherlock():
     chargemol_folder    = os.environ['CS230_chargemol_folder']
 else:
     chargemol_folder    =''
+
 ###########################
 # Database Utilities
 #--------------------------
@@ -39,23 +47,34 @@ class Query(object):
         self.db_path      = db_path
         self.verbose      = verbose
 
-    def query(self, table = None, constraints=None, cols = None,row_factory = None,db_path=None):
-        """ [STRING] -> CONSTRAINT -> [[sqloutput]] """
-        if cols is None:        cols = self.cols
-        if table is None:        table = self.table
+    def query(self, table        = None
+                  , constraints  = None
+                  , cols         = None
+                  , row_factory  = None
+                  , db_path      = None):
+
+        if cols        is None: cols        = self.cols
+        if table       is None: table       = self.table
         if constraints is None: constraints = self.constraints
         if row_factory is None: row_factory = lambda cursor, x: x
-        if db_path is None: db_path = self.db_path
+        if db_path     is None: db_path     = self.db_path
 
-        command = self._command(constraints = constraints,cols = cols, table = table)
+        command = self._command(constraints = constraints
+                                ,cols = cols
+                                , table = table)
         if self.verbose == True: sub_binds(command)
+
         return sqlexecute(*command,db_path=db_path, row_factory=row_factory)
 
     def _command(self,constraints,cols, table):
-        if len(cols)==1 and '*' == str(cols[0]):
-            cols = []
-        self.last_command = table.select(*cols,where=And(constraints)
-                      ,order_by=self.order,limit=self.limit,group_by=self.group)
+        """Create sql command using python-sql"""
+        if (len(cols)==1) and ('*' == str(cols[0])): cols = []
+
+        self.last_command = table.select(*cols
+                                        ,where    = AND(*constraints)
+                                        ,order_by = self.order
+                                        ,limit    = self.limit
+                                        ,group_by = self.group)
         return self.last_command
 
     def query_dict(self, constraints = None, cols = None, dejson = False, deleted = None):
@@ -72,15 +91,12 @@ class Query(object):
         row_factory = dict_factory if dejson is False else dict_factory_wdejson
         return self.query(cols=cols, constraints = constraints, row_factory = row_factory)
 
-    def col_names(self):
-        output = self.query_dict(cols = ['*'], constraints = [])
-        if len(output)<1:
-            raise ValueError,'query_dict returned 0 results for this table'
-        else:
-            return output[0].keys()
-
     def query_col(self, col, constraints = None, table = None):
-        return self.query(cols = [col], constraints = constraints, table = table, row_factory = lambda cursor,x: x[0])
+        """Query a single column in the database"""
+        return self.query(cols         = [col]
+                         , constraints = constraints
+                         , table       = table
+                         , row_factory = lambda cursor,x: x[0])
 
     def make_atoms(self, atoms_id_column):
         """returns a list of atoms corresponding to each row in the database"""
@@ -93,6 +109,9 @@ class Query(object):
 #--------------------------
 def sqlexecute(sqlcommand, binds = [],db_path=db_path,row_factory=None,hacks = []):
     assert sqlcommand.lower()[:6] in ['create','select','insert','delete','alter ','update','drop t'], "Sql Query weird "+sqlcommand
+
+    print 'executing ',sqlcommand,binds
+    for b in binds: print b
     connection = sqlite3.connect(db_path,timeout=30)
     if 'sqrt' in sqlcommand: connection.create_function('SQRT',1,math.sqrt)
 
@@ -153,13 +172,14 @@ def load_row_dictionary(row_dictionary,db_path=db_path):
     sqlexecute(command,binds,db_path=db_path)
 
 def update_chargemol():
+    """As a preprocessing step, compute bond strengths for structures"""
     def read_bonds_json(chmol_folder):
         return json.load(open(os.path.join(chargemol_folder,chmol_folder,'bonds.json')))
 
     on_sherlock = check_if_on_sherlock()
     if on_sherlock:
         directories = os.listdir(chargemol_folder)
-        already_updated = Query(constraints = [PMG_Entries.chargemol ==1]).query_col(PMG_Entries.material_id)
+        already_updated = Query(constraints = [PMG_Entries.chargemol]).query_col(PMG_Entries.material_id)
         fin_directories = filter(lambda x: os.path.exists(os.path.join(chargemol_folder,x,'bonds.json')) and x not in already_updated,directories)
         if len(fin_directories)>0:
             bonds_json_list = map(read_bonds_json, fin_directories)
