@@ -1,5 +1,5 @@
 #External Modules
-import os, ase, json, ase.io, collections
+import os, ase, json, ase.io, collections, math
 import numpy as np
 import pdb
 import torch
@@ -29,19 +29,21 @@ class CNNInputDataset(Dataset):
     storage_directories :: list of storage directories where chargemol analysis,
                             result.json, and final.traj are stored
     """
-    def __init__(self,constraints = [], limit = 10, filter_length = 13):
-        default_constraints = [PMG_Entries.chargemol]
-        constraints += default_constraints
-        self.query = db.Query(constraints = constraints, limit = limit)
-        self.output_dict = self.query.query_dict(cols = ['*'])
-        self.filter_length = filter_length
-        self.attributes = ['en_pauling'
-                          ,'dipole_polarizability'
-                          ,'melting_point'
-                          ,'boiling_point'
-                          ,'covalent_radius'
-                          ,'period'
-                          ,'group_id']
+    def __init__(self,constraints = [], limit = 10, filter_length = 13, num_atoms = 100, transform = None):
+        default_constraints = [PMG_Entries.chargemol==1, PMG_Entries.num_atoms<=num_atoms]
+        constraints        += default_constraints
+        self.query          = db.Query(constraints = constraints, limit = limit, verbose = True)
+        self.output_dict    = self.query.query_dict(cols = ['*'])
+
+        self.filter_length  = filter_length
+        self.transform      = transform
+        self.attributes     = ['en_pauling'
+                              ,'dipole_polarizability'
+                              ,'melting_point'
+                              ,'boiling_point'
+                              ,'covalent_radius'
+                              ,'period'
+                              ,'group_id']
 
     def __getitem__(self, index):
         return self.row_dict_to_CNN_input(self.output_dict[index])
@@ -54,13 +56,13 @@ class CNNInputDataset(Dataset):
         Take a storage directory, with chargemol_analysis and job_output subfolders,
         and produce a connectivity matrix
         """
-        e_form              = row_dict['formation_energy_per_atom']
+        e_form               = row_dict['formation_energy_per_atom']
 
         #Extract the connectivity
         connectivity_tensor, bond_property_tensor = self.row_dict_to_connectivity_tensors(row_dict)
 
         #Get the node feature matrix
-        atoms_obj           = traj_rebuild(row_dict['atoms_obj'])
+        atoms_obj            = traj_rebuild(row_dict['atoms_obj'])
         node_property_tensor = self.atoms_to_node_properties(atoms_obj)
         return (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form)
 
@@ -70,7 +72,7 @@ class CNNInputDataset(Dataset):
         node_property_tensor is shape (num_atoms,number_of_properties)
         """
 
-        node_property_tensor = torch.zeros(len(atoms), len(self.attributes))
+        node_property_tensor        = torch.zeros(len(atoms), len(self.attributes))
         for (i,atom) in enumerate(atoms):
             node_property_tensor[i] = self.get_atom_properties(atom)
         return node_property_tensor
@@ -82,15 +84,15 @@ class CNNInputDataset(Dataset):
         the features are pulled from mendeleev element object
         (See the attributes member data in __init__ for full list of attributes)
         """
-        element_obj = element(atom.symbol)
-        properties = torch.zeros(len(self.attributes))
+        element_obj             = element(atom.symbol)
+        properties              = torch.zeros(len(self.attributes))
 
         for i, attr in enumerate(self.attributes):
             if element_obj.__getattribute__(attr) == None:
                 print atom.symbol
                 print attr
             else:
-                properties[i] = element_obj.__getattribute__(attr)
+                properties[i]   = element_obj.__getattribute__(attr)
         return properties
 
     @staticmethod
@@ -108,13 +110,13 @@ class CNNInputDataset(Dataset):
 
         """
         #convert dict into tensor
-        unpacked_bond_dict = [[bond['fromNode'],bond['toNode'],bond['distance'],bond['bondorder']] for bond in bond_dict]
-        bond_tensor = torch.Tensor(unpacked_bond_dict)
+        unpacked_bond_dict  = [[bond['fromNode'],bond['toNode'],bond['distance'],bond['bondorder']] for bond in bond_dict]
+        bond_tensor         = torch.Tensor(unpacked_bond_dict)
 
         #Apply bond function and sort the bond_tensor by that value
-        bond_sort_value = torch.Tensor(map(bond_function,*zip(*bond_tensor[:,2:])))
-        _, sort_indices = torch.sort(bond_sort_value, descending = True)
-        sorted_bond_tensor = bond_tensor[sort_indices,:]
+        bond_sort_value     = torch.Tensor(map(bond_function,*zip(*bond_tensor[:,2:])))
+        _, sort_indices     = torch.sort(bond_sort_value, descending = True)
+        sorted_bond_tensor  = bond_tensor[sort_indices,:]
         return sorted_bond_tensor
 
     def row_dict_to_connectivity_tensors(self, row_dict,bond_order_cutoff = 0.01):
@@ -139,14 +141,14 @@ class CNNInputDataset(Dataset):
         (See _get_sorted_bond_tensor for the importance metric)
         """
         #sort bond_dict into bond_tensor
-        bond_dict           = json.loads(row_dict['bonds_json'])
-        sorted_bond_tensor  = self._get_sorted_bond_tensor(bond_dict)
+        bond_dict            = json.loads(row_dict['bonds_json'])
+        sorted_bond_tensor   = self._get_sorted_bond_tensor(bond_dict)
 
         #Get number of atoms and initialize each variable
-        n_atoms = row_dict['num_atoms']
+        n_atoms              = row_dict['num_atoms']
         bond_property_tensor = torch.zeros(n_atoms,self.filter_length,2)
-        count = torch.ones(n_atoms).int()
-        ind_arrays = torch.zeros(n_atoms,self.filter_length).int()
+        count                = torch.ones(n_atoms).int()
+        ind_arrays           = torch.zeros(n_atoms,self.filter_length).int()
 
         #Iterate through the bonds and add them
         for (fromNode, toNode, dis, bondorder) in sorted_bond_tensor:
@@ -159,7 +161,7 @@ class CNNInputDataset(Dataset):
 
         #Create connectivity_tensor
         #Shape of Tensor is n_atoms by n_atoms by filter_length
-        connectivity_tensor = torch.zeros(n_atoms,n_atoms,self.filter_length)
+        connectivity_tensor  = torch.zeros(n_atoms,n_atoms,self.filter_length)
         for atom_ind, ind_array in enumerate(ind_arrays):
             clipped_ind_array       = ind_array[:count[atom_ind]]
             #Add the index of the current atom to top of array
@@ -175,6 +177,24 @@ class CNNInputDataset(Dataset):
         for (location, atom_index) in enumerate(atom_index_vector):
             output[atom_index][location] += 1
         return output
+
+###########################
+#Input Transforms
+#--------------------------
+
+
+class PadAtoms(object):
+    """
+    Pad an input file so that all atoms have num_atoms number of atoms
+    """
+    def __init__(self, num_atoms):
+        assert isinstance(num_atoms, int)
+        self.num_atoms = num_atoms
+
+    def __call__(self,input_tup):
+        (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form) = input_tup
+        curr_num_atoms = node_property_tensor.size()[0]
+        padding_property_tensor = torch.zeros((int(math.floor(num_atoms-curr_num_atoms)),node_property_tensor.size()[1:]))
 
 
 ###########################

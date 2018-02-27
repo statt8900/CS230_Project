@@ -36,7 +36,7 @@ def query_all_of_materials_project():
     mp_rest = MPRester(API_key)
 
     #properties useful for project
-    useful_properties =   [u'energy'
+    useful_properties =     [u'energy'
                             ,u'band_gap'
                             ,u'e_above_hull'
                             ,u'elements'

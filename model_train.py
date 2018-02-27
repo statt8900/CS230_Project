@@ -23,8 +23,8 @@ class PyTorchTrainer(object):
         self.loss_fn   = loss_fn
 
         self.epoch_loss_history = []
-        self.old_time = None
-        self.epoch    = 0
+        self.old_time  = None
+        self.epoch     = 0
 
     def train_epochs(self, num_epochs):
         self.start     = time()
@@ -36,12 +36,12 @@ class PyTorchTrainer(object):
 
     def train_epoch(self):
         self.epoch += 1
-        losses = []
+        losses      = []
         for tup in self.dataset:
             (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form) = tup
             y_actual = Variable(e_form*torch.ones(1))
 
-            node_property_tensor_var     = Variable(node_property_tensor)
+            node_property_tensor_var    = Variable(node_property_tensor)
             connectivity_tensor_var     = Variable(connectivity_tensor)
             bond_property_tensor_var    = Variable(bond_property_tensor)
 
@@ -56,8 +56,8 @@ class PyTorchTrainer(object):
         self.epoch_loss_history.append(np.mean(np.array(losses)))
 
         #Print output of epoch
-        self.old_time = self.curr_time
-        self.curr_time = time()
+        self.old_time   = self.curr_time
+        self.curr_time  = time()
         print 'Total time since start: {}'.format(self.curr_time - self.start)
         print 'Epoch Time: {}'.format(self.curr_time - self.old_time)
         print 'MSE Error = {}'.format(self.epoch_loss_history[-1])
@@ -78,7 +78,7 @@ def train():
     batch_size      = 10        # not implemented yet
     sampler         = SubsetRandomSampler(range(limit))
     #Optimizer parameters
-    learning_rate   = 1e-4
+    learning_rate   = 1e-3
     momentum        = 0.9
     #Model paramters
     model = nn.Sequential(

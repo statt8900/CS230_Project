@@ -95,13 +95,13 @@ class ChemConv(nn.Module):
         self.out_depth          = out_depth
         self.filter_length      = filter_length
 
-        self.property_filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth))
-        self.property_filters.data.normal_()
-        self.property_filters.data *= 0.01
-
-        self.bond_filters       = nn.Parameter(torch.Tensor(out_depth,filter_length,3))
-        self.bond_filters.data.normal_()
-        self.bond_filters.data *= 0.01
+        self.filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth+2))
+        # nn.init.xavier_normal(self.filters)
+        # self.filters.data[:in_depth+1]  *= 0.01
+        # #
+        self.filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth+2))
+        self.filters.data.normal_()
+        self.filters.data *= 1/self.in_depth
 
     def forward(self, node_property_tensor):
         """
@@ -115,32 +115,25 @@ class ChemConv(nn.Module):
 
         #Gets the global variables for this samples connectivity
         global connectivity_tensor, bond_property_tensor
-
+        import pdb; pdb.set_trace()
         #Get dimensions of inputs
-        (n_filters, filter_length, n_input_features) = self.property_filters.size()
+        (n_filters, filter_length, n_input_features) = self.filters.size()
         n_atoms = node_property_tensor.size()[0]
 
         #Repeat the filter list and bond_property_tensor for matrix multiplication/concatenation
-        property_filters_repeat     = self.property_filters.expand(n_atoms,n_filters,filter_length, n_input_features)
-        bond_property_tensor_repeat = bond_property_tensor.expand(n_filters,n_atoms, filter_length, 2)
-        bond_property_tensor_repeat = bond_property_tensor_repeat.transpose(0,1)
+        filters_repeat                  = self.filters.expand(n_atoms,*self.filters.size())
 
         #Dot the connectivity_tensor with the node feature matrix to create the tensors
         #to convolve with each filter
-        node_connection_tensor      = torch.matmul(connectivity_tensor.transpose(1,2),node_property_tensor)
+        node_connection_tensor          = torch.matmul(connectivity_tensor.transpose(1,2),node_property_tensor)
 
         #Convulve the tensor with the filters
-        convolved_tensor            = torch.mul(node_connection_tensor,property_filters_repeat.transpose(0,1))
-        bond_score_tensor           = torch.sum(convolved_tensor, 3).unsqueeze(3)
-        bond_score_tensor           = bond_score_tensor.transpose(0,1)
-
-        #Concatenate the bond_property_tensor onto the bond_score tensor
-        #and feed into fully_connected_net
-        combined_tensor             = torch.cat((bond_score_tensor, bond_property_tensor_repeat),3)
+        combined_tensor                 = torch.cat((node_connection_tensor, bond_property_tensor),2)
+        convolved_tensor                = torch.mul(combined_tensor,filters_repeat.transpose(0,1))
 
         #Combined tensor is shape: n_atoms x n_filters x filter_length x 3
-        convolved_bonds             = torch.mul(combined_tensor,self.bond_filters)
-        new_node_property_tensor     = torch.sum(torch.sum(convolved_bonds,3),2)
+        new_node_property_tensor        = torch.sum(torch.sum(convolved_tensor,3),2)
+        new_node_property_tensor        = new_node_property_tensor.transpose(0,1)
 
         return new_node_property_tensor
 

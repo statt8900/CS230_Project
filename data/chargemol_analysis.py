@@ -1,5 +1,5 @@
 #External Modules
-import sql,os, subprocess,json
+import sql,os,subprocess,json,shutil
 import numpy as np
 import collections
 
@@ -7,9 +7,9 @@ from ase.io import write, read
 import ase
 
 #Internal Modules
-from CS230_Project.misc.sql_shortcuts import *
-from CS230_Project.misc.utils     import safeMkDir, check_if_on_sherlock, traj_rebuild, flatten, negate, print_time
-import CS230_Project.data.database_management as db
+from    CS230_Project.misc.sql_shortcuts import *
+from    CS230_Project.misc.utils         import safeMkDir, check_if_on_sherlock, traj_rebuild, flatten, negate, print_time
+import  CS230_Project.data.database_management as db
 
 ################################################################################
 """
@@ -26,7 +26,7 @@ assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 #Set enviromental variables for required enviromental variables
 project_folder = os.environ['CS230_Project_Folder']
 chargemol_folder = os.environ['CS230_chargemol_folder']
-
+loaded_chargemol_folder = os.environ['CS230_finished_chargemol_folder']
 
 def meta_bond_analyze(constraints = [], limit = 20):
     """
@@ -79,3 +79,16 @@ def get_failed_material_ids():
     attempted_ids = os.listdir(chargemol_folder)
     failed_ids = filter(lambda id_curr: not id_curr in finished_ids, attempted_ids)
     return failed_ids
+
+def move_finished_material_ids():
+    """ Move the finished directories from the running directory to the finished folder"""
+    finished_ids =  db.Query(constraints = [PMG_Entries.chargemol]).query_col(PMG_Entries.material_id)
+    attempted_ids = os.listdir(chargemol_folder)
+    loaded_ids = os.listdir(loaded_chargemol_folder)
+    failed_ids = filter(lambda id_curr: not id_curr in finished_ids, attempted_ids)
+    succesful_ids_that_need_to_be_moved = filter(lambda id_curr: id_curr in finished_ids and id_curr not in loaded_ids, attempted_ids)
+    for id_curr in succesful_ids_that_need_to_be_moved:
+            old_pth = os.path.join(chargemol_folder,id_curr)
+            new_pth = os.path.join(loaded_chargemol_folder,id_curr)
+            print 'Moving {} from {} to {}'.format(id_curr, old_pth,new_pth)
+            shutil.move(old_pth, new_pth)
