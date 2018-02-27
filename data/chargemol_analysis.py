@@ -37,15 +37,21 @@ def meta_bond_analyze(constraints = [], limit = 20):
     constraints :: List of python-sql constraints to be added to the default constraints
     limit       :: Int, number of jobs to be randomly sampled
     """
-    from CataLog.chargemol.chargemol                        import submit_script
+    from CataLog.chargemol.chargemol                 import BondAnalyzer
     assert check_if_on_sherlock, 'Can only run chargemol on sherlock'
     db.update_chargemol()
     running_ids = get_running_materials_ids()
     failed_ids = get_failed_material_ids()
     # default_constraints = [PMG_Entries.chargemol==0, NotIn(PMG_Entries.material_id, running_ids)]
-    constraints = [PMG_Entries.chargemol==0]
+    constraints = [Not(PMG_Entries.chargemol)]
 
-    query = db.Query(constraints = constraints, cols = [PMG_Entries.material_id, PMG_Entries.atoms_obj], order = Random(), limit = limit)
+    query = db.Query(constraints = constraints
+                    , cols = [PMG_Entries.material_id
+                             ,PMG_Entries.atoms_obj]
+                    , order = Random()
+                    , limit = limit
+                    , verbose = True)
+                    
     mat_ids, atoms_obj_pickle = zip(*query.query())
     atoms_obj_list = map(traj_rebuild, atoms_obj_pickle)
     for mat_id, atoms_obj  in zip(mat_ids,atoms_obj_list):
@@ -55,8 +61,9 @@ def meta_bond_analyze(constraints = [], limit = 20):
             os.chmod(pth,0755)
             if not os.path.exists(pth+'/final.traj'):
                 write(pth+'/final.traj',atoms_obj)
-            os.chdir(pth)
-            submit_script(pth,pth+'/final.traj')
+            BondAnalyzer().submit(pth,'final')
+            #os.chdir(pth)
+            #submit_script(pth,pth+'/final.traj')
 
 
 def get_running_materials_ids():
