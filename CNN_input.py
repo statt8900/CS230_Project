@@ -1,7 +1,6 @@
 #External Modules
-import os, ase, json, ase.io, collections, math
+import os, ase, json, ase.io, collections, math, time
 import numpy as np
-import pdb
 import torch
 from torch.utils.data import Dataset, DataLoader
 from mendeleev import element
@@ -29,14 +28,15 @@ class CNNInputDataset(Dataset):
     storage_directories :: list of storage directories where chargemol analysis,
                             result.json, and final.traj are stored
     """
-    def __init__(self,constraints = [], limit = 10, filter_length = 13, num_atoms = 100, transform = None):
+    def __init__(self,constraints = [], limit = 10, filter_length = 13, num_atoms = 50, transform = None, use_cuda = False):
         default_constraints = [PMG_Entries.chargemol==1, PMG_Entries.num_atoms<=num_atoms]
-        constraints        += default_constraints
-        self.query          = db.Query(constraints = constraints, limit = limit, verbose = True)
+        default_constraints += constraints
+        self.query          = db.Query(constraints = default_constraints, limit = limit, verbose = True)
         self.output_dict    = self.query.query_dict(cols = ['*'])
-
+        self.num_atoms      = num_atoms
         self.filter_length  = filter_length
         self.transform      = transform
+        self.use_cuda       = use_cuda
         self.attributes     = ['en_pauling'
                               ,'dipole_polarizability'
                               ,'melting_point'
@@ -56,7 +56,7 @@ class CNNInputDataset(Dataset):
         Take a storage directory, with chargemol_analysis and job_output subfolders,
         and produce a connectivity matrix
         """
-        e_form               = row_dict['formation_energy_per_atom']
+        e_form               = row_dict['formation_energy_per_atom']*row_dict['num_atoms']/self.num_atoms
 
         #Extract the connectivity
         connectivity_tensor, bond_property_tensor = self.row_dict_to_connectivity_tensors(row_dict)
@@ -64,6 +64,7 @@ class CNNInputDataset(Dataset):
         #Get the node feature matrix
         atoms_obj            = traj_rebuild(row_dict['atoms_obj'])
         node_property_tensor = self.atoms_to_node_properties(atoms_obj)
+
         return (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form)
 
     def atoms_to_node_properties(self, atoms):
@@ -72,7 +73,7 @@ class CNNInputDataset(Dataset):
         node_property_tensor is shape (num_atoms,number_of_properties)
         """
 
-        node_property_tensor        = torch.zeros(len(atoms), len(self.attributes))
+        node_property_tensor        = torch.zeros(self.num_atoms, len(self.attributes))
         for (i,atom) in enumerate(atoms):
             node_property_tensor[i] = self.get_atom_properties(atom)
         return node_property_tensor
@@ -146,9 +147,9 @@ class CNNInputDataset(Dataset):
 
         #Get number of atoms and initialize each variable
         n_atoms              = row_dict['num_atoms']
-        bond_property_tensor = torch.zeros(n_atoms,self.filter_length,2)
-        count                = torch.ones(n_atoms).int()
-        ind_arrays           = torch.zeros(n_atoms,self.filter_length).int()
+        bond_property_tensor = torch.zeros(self.num_atoms,self.filter_length,2)
+        count                = torch.ones(self.num_atoms).int()
+        ind_arrays           = torch.zeros(self.num_atoms,self.filter_length).int()
 
         #Iterate through the bonds and add them
         for (fromNode, toNode, dis, bondorder) in sorted_bond_tensor:
@@ -161,13 +162,16 @@ class CNNInputDataset(Dataset):
 
         #Create connectivity_tensor
         #Shape of Tensor is n_atoms by n_atoms by filter_length
-        connectivity_tensor  = torch.zeros(n_atoms,n_atoms,self.filter_length)
+        connectivity_tensor  = torch.zeros(self.num_atoms,self.num_atoms,self.filter_length)
         for atom_ind, ind_array in enumerate(ind_arrays):
             clipped_ind_array       = ind_array[:count[atom_ind]]
             #Add the index of the current atom to top of array
             clipped_ind_array[0]    = atom_ind
-            connectivity_tensor[atom_ind] = self.get_one_hot(clipped_ind_array, n_atoms, self.filter_length)
 
+            if atom_ind < n_atoms:
+                connectivity_tensor[atom_ind] = self.get_one_hot(clipped_ind_array, self.num_atoms, self.filter_length)
+            else:
+                connectivity_tensor[atom_ind] = torch.zeros(self.num_atoms,self.filter_length)
         return connectivity_tensor, bond_property_tensor
 
     @staticmethod

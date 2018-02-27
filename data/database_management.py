@@ -1,9 +1,8 @@
 #External modules
 import sqlite3, os, pickle, sql, json
 #Internal Modules
-from CS230_Project.misc.sql_shortcuts import *
-from CS230_Project.misc.utils import check_if_on_sherlock, sub_binds, replacer
-
+from CS230_Project.misc.sql_shortcuts       import *
+from CS230_Project.misc.utils               import check_if_on_sherlock, sub_binds, replacer
 ################################################################################
 """
 This module contains functions to query and update the input database, which
@@ -21,9 +20,10 @@ project_folder          = os.environ['CS230_Project_Folder']
 db_path                 = os.environ['CS230_database_path']
 if check_if_on_sherlock():
     chargemol_folder    = os.environ['CS230_chargemol_folder']
+    loaded_chargemol_folder = os.environ['CS230_finished_chargemol_folder']
 else:
-    chargemol_folder    =''
-
+    chargemol_folder        = ''
+    loaded_chargemol_folder = ''
 ###########################
 # Database Utilities
 #--------------------------
@@ -69,7 +69,6 @@ class Query(object):
     def _command(self,constraints,cols, table):
         """Create sql command using python-sql"""
         if (len(cols)==1) and ('*' == str(cols[0])): cols = []
-
         self.last_command = table.select(*cols
                                         ,where    = AND(*constraints)
                                         ,order_by = self.order
@@ -110,8 +109,6 @@ class Query(object):
 def sqlexecute(sqlcommand, binds = [],db_path=db_path,row_factory=None,hacks = []):
     assert sqlcommand.lower()[:6] in ['create','select','insert','delete','alter ','update','drop t'], "Sql Query weird "+sqlcommand
 
-    print 'executing ',sqlcommand,binds
-    for b in binds: print b
     connection = sqlite3.connect(db_path,timeout=30)
     if 'sqrt' in sqlcommand: connection.create_function('SQRT',1,math.sqrt)
 
@@ -179,7 +176,7 @@ def update_chargemol():
     on_sherlock = check_if_on_sherlock()
     if on_sherlock:
         directories = os.listdir(chargemol_folder)
-        already_updated = Query(constraints = [PMG_Entries.chargemol]).query_col(PMG_Entries.material_id)
+        already_updated = Query(constraints = [PMG_Entries.chargemol==1]).query_col(PMG_Entries.material_id)
         fin_directories = filter(lambda x: os.path.exists(os.path.join(chargemol_folder,x,'bonds.json')) and x not in already_updated,directories)
         if len(fin_directories)>0:
             bonds_json_list = map(read_bonds_json, fin_directories)

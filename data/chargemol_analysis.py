@@ -5,6 +5,7 @@ import collections
 
 from ase.io import write, read
 import ase
+from CataLog.chargemol.chargemol import BondAnalyzer
 
 #Internal Modules
 from    CS230_Project.misc.sql_shortcuts import *
@@ -51,7 +52,7 @@ def meta_bond_analyze(constraints = [], limit = 20):
                     , order = Random()
                     , limit = limit
                     , verbose = True)
-                    
+
     mat_ids, atoms_obj_pickle = zip(*query.query())
     atoms_obj_list = map(traj_rebuild, atoms_obj_pickle)
     for mat_id, atoms_obj  in zip(mat_ids,atoms_obj_list):
@@ -61,16 +62,15 @@ def meta_bond_analyze(constraints = [], limit = 20):
             os.chmod(pth,0755)
             if not os.path.exists(pth+'/final.traj'):
                 write(pth+'/final.traj',atoms_obj)
-            BondAnalyzer().submit(pth,'final')
-            #os.chdir(pth)
-            #submit_script(pth,pth+'/final.traj')
+            os.chdir(pth)
+            BondAnalyzer(dftcode='gpaw',quality='low').submit(pth,'final')
 
 
 def get_running_materials_ids():
     """ Get list of material_ids for currently running chargemol analysis"""
     all_current_jobs            = subprocess.check_output(['squeue','-o','%Z']).split('\n')
     jobs_in_chargemol_folder    = filter(lambda dir_curr: chargemol_folder in dir_curr, all_current_jobs)
-    currently_running_materials_id = map(os.path.basename, jobs_in_chargemol_folder)
+    currently_running_materials_id = [x.replace(chargemol_folder,'',1).split('/')[1] for x in jobs_in_chargemol_folder]
     return currently_running_materials_id
 
 def get_failed_material_ids():
@@ -88,7 +88,31 @@ def move_finished_material_ids():
     failed_ids = filter(lambda id_curr: not id_curr in finished_ids, attempted_ids)
     succesful_ids_that_need_to_be_moved = filter(lambda id_curr: id_curr in finished_ids and id_curr not in loaded_ids, attempted_ids)
     for id_curr in succesful_ids_that_need_to_be_moved:
-            old_pth = os.path.join(chargemol_folder,id_curr)
-            new_pth = os.path.join(loaded_chargemol_folder,id_curr)
-            print 'Moving {} from {} to {}'.format(id_curr, old_pth,new_pth)
-            shutil.move(old_pth, new_pth)
+            try:
+                old_pth = os.path.join(chargemol_folder,id_curr)
+                new_pth = os.path.join(loaded_chargemol_folder,id_curr)
+                shutil.move(old_pth, new_pth)
+                print 'Moving {} from {} to {}'.format(id_curr, old_pth,new_pth)
+            except OSError:
+                print 'Failed to move {}'.format(id_curr)
+
+def unpack_directories():
+    """unpack the nested directories from chargemol"""
+    attempted_ids   = os.listdir(chargemol_folder)
+    running_ids     = get_running_materials_ids()
+    not_running_ids = filter(lambda id_curr: not id_curr in running_ids, attempted_ids)
+    succesful_ids   = filter(lambda id_curr: os.path.exists(os.path.join(chargemol_folder
+                                                                        ,id_curr
+                                                                        ,'chargemol_analysis'
+                                                                        ,'final'
+                                                                        ,'bonds.json')) ,not_running_ids)
+    for id_curr in succesful_ids:
+        print id_curr
+        os.system('mv '+os.path.join(chargemol_folder,id_curr,'chargemol_analysis','final','*')+ ' '+os.path.join(chargemol_folder,id_curr))
+        os.system('rm -r '+os.path.join(chargemol_folder,id_curr,'chargemol_analysis'))
+    
+
+def load_chargemol():
+    unpack_directories()
+    db.update_chargemol()
+    move_finished_material_ids()
