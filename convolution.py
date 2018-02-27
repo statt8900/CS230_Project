@@ -101,7 +101,7 @@ class ChemConv(nn.Module):
         # #
         self.filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth+2))
         self.filters.data.normal_()
-        self.filters.data *= 1/self.in_depth
+        self.filters.data *= 1/float(self.in_depth)
 
     def forward(self, node_property_tensor):
         """
@@ -115,25 +115,29 @@ class ChemConv(nn.Module):
 
         #Gets the global variables for this samples connectivity
         global connectivity_tensor, bond_property_tensor
-        import pdb; pdb.set_trace()
         #Get dimensions of inputs
-        (n_filters, filter_length, n_input_features) = self.filters.size()
-        n_atoms = node_property_tensor.size()[0]
+        (n_filters, filter_length, _) = self.filters.size()
+        (n_samples, n_atoms, n_input_features)= node_property_tensor.size()
+
 
         #Repeat the filter list and bond_property_tensor for matrix multiplication/concatenation
-        filters_repeat                  = self.filters.expand(n_atoms,*self.filters.size())
+        filters_repeat                  = self.filters.expand(n_samples,n_atoms,*self.filters.size())
 
         #Dot the connectivity_tensor with the node feature matrix to create the tensors
         #to convolve with each filter
-        node_connection_tensor          = torch.matmul(connectivity_tensor.transpose(1,2),node_property_tensor)
+        connectivity_tensor_mod         = connectivity_tensor.transpose(2,3)
+        connectivity_tensor_mod         = connectivity_tensor_mod.resize(n_samples,n_atoms*filter_length,n_atoms)
+        node_connection_tensor          = torch.bmm(connectivity_tensor_mod,node_property_tensor)
+        node_connection_tensor          = node_connection_tensor.resize(n_samples, n_atoms, filter_length, n_input_features)
 
         #Convulve the tensor with the filters
-        combined_tensor                 = torch.cat((node_connection_tensor, bond_property_tensor),2)
-        convolved_tensor                = torch.mul(combined_tensor,filters_repeat.transpose(0,1))
+        combined_tensor                 = torch.cat((node_connection_tensor, bond_property_tensor),3)
+        combined_tensor                 = combined_tensor.expand(n_filters,*combined_tensor.size()).transpose(0,1)
+        convolved_tensor                = torch.mul(combined_tensor,filters_repeat.transpose(1,2))
 
         #Combined tensor is shape: n_atoms x n_filters x filter_length x 3
-        new_node_property_tensor        = torch.sum(torch.sum(convolved_tensor,3),2)
-        new_node_property_tensor        = new_node_property_tensor.transpose(0,1)
+        new_node_property_tensor        = torch.sum(torch.sum(convolved_tensor,4),3)
+        new_node_property_tensor        = new_node_property_tensor.transpose(1,2)
 
         return new_node_property_tensor
 
@@ -171,20 +175,20 @@ class Average(nn.Module):
         super(Average, self).__init__()
 
     def forward(self, input):
-        return AverageFunction.apply(input)
+        return torch.mean(input, dim = 1).double()
 
-class AverageFunction(Function):
-    @staticmethod
-    def forward(ctx, input):
-        ctx.N = input.shape[0]
-        output = torch.mean(input)
-        output = output*torch.ones(1)
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        grad_input = Variable(grad_output.data/float(ctx.N)*torch.ones(ctx.N,1))
-        return grad_input
+# class AverageFunction(Function):
+#     @staticmethod
+#     def forward(ctx, input):
+#         ctx.N = input.shape[0]
+#         output = torch.mean(input)
+#         output = output*torch.ones(1)
+#         return output
+#
+#     @staticmethod
+#     def backward(ctx, grad_output):
+#         grad_input = Variable(grad_output.data/float(ctx.N)*torch.ones(ctx.N,1))
+#         return grad_input
 
 ###########################
 #Archived Code

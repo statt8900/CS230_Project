@@ -1,6 +1,6 @@
 import os, pickle, sqlite3
 
-
+from progress.bar import Bar
 
 ################################################################################
 """This module contains helpful functions for the entire project"""
@@ -48,3 +48,17 @@ def print_time(floatHours):
 	return "%02d:%02d" % (intHours,(floatHours-intHours)*60)
 
 negate   = lambda x: -x
+
+
+
+class BatchesBar(Bar):
+    message = 'Processing Batches'
+    fill = '*'
+    suffix = '%(index)d/%(max)d - %(eta_min)dmin remaining - %(MSE_curr).3f MSE'
+    @property
+    def eta_min(self):
+        return float(self.eta) // float(60)
+
+    @property
+    def current_MSE(self):
+        return self.MSE

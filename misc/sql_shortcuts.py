@@ -3,7 +3,9 @@ import sql
 from sql import Table
 from sql.functions import Function,Substring,Round,Random
 from sql.operators import In, NotIn, And, Not
+from sql           import As,Table,Join,Flavor,Literal
 
+Flavor.set(Flavor(paramstyle='qmark')) # python-sql internal setting
 ################################################################################
 """This module contains shortcuts for using python-sql when querying the database
 of input samples"""

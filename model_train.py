@@ -1,6 +1,5 @@
-import CS230_Project.convolution as conv
-from CS230_Project.CNN_input import CNNInputDataset
 import matplotlib.pyplot as plt
+import sys, math
 import numpy as np
 import torch
 from torch.autograd import Variable
@@ -9,6 +8,10 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn as nn
 from time import time
 
+
+import CS230_Project.convolution as conv
+from CS230_Project.CNN_input import CNNInputDataset
+from CS230_Project.misc.utils import BatchesBar
 ################################################################################
 """
 This module contains the PyTorchTrainer object used to train models
@@ -17,10 +20,12 @@ This module contains the PyTorchTrainer object used to train models
 
 class PyTorchTrainer(object):
     def __init__(self, dataset, dataloader, model, optimizer, loss_fn):
-        self.dataset   = dataset
-        self.model     = model
-        self.optimizer = optimizer
-        self.loss_fn   = loss_fn
+        self.dataset        = dataset
+        self.dataloader     = dataloader
+        self.num_batches    = len(dataloader)
+        self.model          = model
+        self.optimizer      = optimizer
+        self.loss_fn        = loss_fn
 
         self.epoch_loss_history = []
         self.old_time  = None
@@ -37,9 +42,11 @@ class PyTorchTrainer(object):
     def train_epoch(self):
         self.epoch += 1
         losses      = []
-        for tup in self.dataset:
-            (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form) = tup
-            y_actual = Variable(e_form*torch.ones(1))
+        progressbar = BatchesBar(max = self.num_batches)
+        for i, batch in enumerate(self.dataloader):
+
+            (node_property_tensor, connectivity_tensor, bond_property_tensor, e_form) = batch
+            y_actual = Variable(e_form)
 
             node_property_tensor_var    = Variable(node_property_tensor)
             connectivity_tensor_var     = Variable(connectivity_tensor)
@@ -53,11 +60,15 @@ class PyTorchTrainer(object):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            progressbar.MSE_curr = np.mean(np.array(losses))
+            progressbar.next()
         self.epoch_loss_history.append(np.mean(np.array(losses)))
 
         #Print output of epoch
+
         self.old_time   = self.curr_time
         self.curr_time  = time()
+        print ''
         print 'Total time since start: {}'.format(self.curr_time - self.start)
         print 'Epoch Time: {}'.format(self.curr_time - self.old_time)
         print 'MSE Error = {}'.format(self.epoch_loss_history[-1])
@@ -74,11 +85,11 @@ class PyTorchTrainer(object):
 def train():
     #Model Iterations/Sampling Parameters
     num_epochs      = 30
-    limit           = 10
-    batch_size      = 10        # not implemented yet
+    limit           = 64
+    batch_size      = 4        # not implemented yet
     sampler         = SubsetRandomSampler(range(limit))
     #Optimizer parameters
-    learning_rate   = 1e-3
+    learning_rate   = 1e-4
     momentum        = 0.9
     #Model paramters
     model = nn.Sequential(
@@ -99,7 +110,6 @@ def train():
                              )
     optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
     loss_fn = torch.nn.MSELoss()
-
     #Create Trainer object
     trainer = PyTorchTrainer(dataset, dataloader, model, optimizer,loss_fn)
 
