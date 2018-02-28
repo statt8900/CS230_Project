@@ -101,7 +101,7 @@ class ChemConv(nn.Module):
         # #
         self.filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth+2))
         self.filters.data.normal_()
-        self.filters.data *= 1/float(self.in_depth)
+        self.filters.data *= 1/float(self.in_depth)/float(50)
 
     def forward(self, node_property_tensor):
         """
@@ -130,7 +130,7 @@ class ChemConv(nn.Module):
         node_connection_tensor          = torch.bmm(connectivity_tensor_mod,node_property_tensor)
         node_connection_tensor          = node_connection_tensor.resize(n_samples, n_atoms, filter_length, n_input_features)
 
-        #Convulve the tensor with the filters
+        #Convolve the tensor with the filters
         combined_tensor                 = torch.cat((node_connection_tensor, bond_property_tensor),3)
         combined_tensor                 = combined_tensor.expand(n_filters,*combined_tensor.size()).transpose(0,1)
         convolved_tensor                = torch.mul(combined_tensor,filters_repeat.transpose(1,2))

@@ -32,10 +32,16 @@ class Query(object):
     """
     Read from a SQLite database
     """
-    def __init__(self, cols=[PMG_Entries.pretty_formula], constraints=[], table = PMG_Entries
-                , order = None,group = None,limit = None, deleted = False
-                , db_path = db_path
-                , verbose = False, distinct=False):
+    def __init__(self, cols=[PMG_Entries.pretty_formula]
+                     , constraints=[]
+                     , table   = PMG_Entries
+                     , order   = None
+                     , group   = None
+                     , limit   = None
+                     , deleted = False
+                     , db_path = db_path
+                     , verbose = False
+                     , distinct= False):
 
         self.constraints  = constraints
         self.cols         = cols
@@ -101,6 +107,7 @@ class Query(object):
         """returns a list of atoms corresponding to each row in the database"""
         output = self.query_col(PMG_Entries.atoms_obj)
         return map(traj_rebuild, output)
+
 
 
 ###########################
@@ -215,7 +222,6 @@ def create_project_database(db_path = db_path):
                                             +',cif                          varchar not null'
                                             +',atoms_obj                    blob    not null'
                                             +',chargemol                    integer not null'
-                                            +',bonds_json                   varchar'
                                             +',UNIQUE(material_id))'),db_path=db_path)
 
     os.system('chmod 777 '+db_path)
@@ -225,15 +231,15 @@ def fill_element(db_path=db_path):
     from ase.data import atomic_masses,atomic_names,chemical_symbols,covalent_radii,reference_states
     from ase.build import bulk,molecule
 
-    try:
-        add_element(db_path)
+    try:                             add_element(db_path)
     except sqlite3.OperationalError: pass
 
     # Constants
     # ---------
     sym_dict = {'fcc':225,'diamond':227,'bcc':229,'hcp':194 ,'sc':221
-                ,'cubic':None ,'rhombohedral':None ,'tetragonal':None ,'monoclinic':None
-                ,'orthorhombic':None,'diatom':'D*h','atom':'K*h'}
+                ,'cubic':None ,'rhombohedral':None ,'tetragonal':None
+                ,'monoclinic':None,'orthorhombic':None
+                ,'diatom':'D*h','atom':'K*h'}
 
     ase_cols       = ['symbol','name','mass','radius','reference_phase','reference_spacegroup','reference_pointgroup']
     mendeleev_cols = ['atomic_number', 'atomic_weight', 'abundance_crust', 'abundance_sea', 'atomic_radius', 'atomic_volume',
@@ -252,9 +258,7 @@ def fill_element(db_path=db_path):
     # Main Loop
     #----------
     for i in range(1,84):
-        print i
         s,n,m,r = [x[i] for x in [chemical_symbols,atomic_names,atomic_masses,covalent_radii]]
-        print m
         if reference_states[i] is None: rp,rsg,rpg=None,None,None
         elif 'a' in reference_states[i]:
             rp,rpg = 'bulk',None
@@ -299,24 +303,32 @@ def add_element(db_path=db_path):
                                         +',density                  numeric'
                                         +',dipole_polarizability    numeric'
                                         +',econf                    numeric'
-                                        +',electron_affinity    numeric'
-                                        +',en_allen             numeric'
-                                        +',en_ghosh             numeric'
-                                        +',en_pauling           numeric'
-                                        +',evaporation_heat     numeric'
-                                        +',fusion_heat          numeric'
-                                        +',gas_basicity         numeric'
-                                        +',geochemical_class    varchar'
-                                        +',goldschmidt_class    varchar'
-                                        +',group_id             integer'
-                                        +',heat_of_formation    numeric'
-                                        +',is_radioactive       bool'
-                                        +',lattice_constant     numeric'
-                                        +',lattice_structure    varchar'
-                                        +',melting_point        numeric'
-                                        +',metallic_radius      numeric'
-                                        +',metallic_radius_c12  numeric'
-                                        +',period               integer'
-                                        +',proton_affinity      numeric'
-                                        +',thermal_conductivity numeric'
-                                        +',vdw_radius   numeric)'),db_path=db_path)
+                                        +',electron_affinity        numeric'
+                                        +',en_allen                 numeric'
+                                        +',en_ghosh                 numeric'
+                                        +',en_pauling               numeric'
+                                        +',evaporation_heat         numeric'
+                                        +',fusion_heat              numeric'
+                                        +',gas_basicity             numeric'
+                                        +',geochemical_class        varchar'
+                                        +',goldschmidt_class        varchar'
+                                        +',group_id                 integer'
+                                        +',heat_of_formation        numeric'
+                                        +',is_radioactive           bool'
+                                        +',lattice_constant         numeric'
+                                        +',lattice_structure        varchar'
+                                        +',melting_point            numeric'
+                                        +',metallic_radius          numeric'
+                                        +',metallic_radius_c12      numeric'
+                                        +',period                   integer'
+                                        +',proton_affinity          numeric'
+                                        +',thermal_conductivity     numeric'
+                                        +',vdw_radius               numeric)')
+                                        ,db_path=db_path)
+
+#############################################################################
+def build_dataset():
+    c = Query(constraints=[PMG_Entries.chargemol]).query_dict(cols = ['*']
+                                                             ,cursor=True)
+    while True:
+        print c.fetchone()
