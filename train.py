@@ -61,7 +61,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
                 node_property_tensor_var    = node_property_tensor_var.cuda(async=True)
                 connectivity_tensor_var     = connectivity_tensor_var.cuda(async=True)
                 bond_property_tensor_var    = bond_property_tensor_var.cuda(async=True)
-                mask_atom_tensor_var        = mask_atom_tensor_var.cude(async=True)
+                mask_atom_tensor_var        = mask_atom_tensor_var.cuda(async=True)
                 labels_batch_var            = labels_batch_var.cuda(async=True)
 
             input_tup = (node_property_tensor_var, connectivity_tensor_var, bond_property_tensor_var, mask_atom_tensor_var)
