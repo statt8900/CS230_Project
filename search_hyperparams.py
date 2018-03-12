@@ -7,12 +7,14 @@ import sys
 
 import utils
 
+project_folder  = os.environ['CS230_Project_Folder']
+datasets_folder = os.environp['CS230_Datasets']
 
 PYTHON = sys.executable
 parser = argparse.ArgumentParser()
-parser.add_argument('--parent_dir', default='experiments/learning_rate',
+parser.add_argument('--parent_dir', default=os.path.join(project_folder,'experiments/learning_rate'),
                     help='Directory containing params.json')
-parser.add_argument('--data_dir', default='data_storage/tiny_dataset', help="Directory containing the dataset")
+parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'tiny_dataset'), help="Directory containing the dataset")
 
 
 def launch_training_job(parent_dir, data_dir, job_name, params):

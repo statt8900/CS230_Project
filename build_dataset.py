@@ -31,12 +31,12 @@ from CS230_Project.misc.sql_shortcuts import *
 import CS230_Project.data.database_management as db
 from CS230_Project.misc.utils import traj_rebuild
 
-project_folder = os.environ['CS230_Project_Folder']
-
+project_folder  = os.environ['CS230_Project_Folder']
+datasets_folder = os.environp['CS230_Datasets']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--output_dir', default=os.path.join(project_folder,'data_storage/datasets'), help="Where to write the new data")
-parser.add_argument('--data_dir', default=os.path.join(project_folder,'data_storage/raw_inputs'), help="Where to read the raw data")
+parser.add_argument('--output_dir', default=os.path.join(datasets_folder,'/datasets'), help="Where to write the new data")
+parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'/raw_inputs'), help="Where to read the raw data")
 
 #Sorting Functions for determining bond importance
 bo_over_dis = lambda distance, bondorder: bondorder/distance
@@ -266,8 +266,8 @@ def split_test_set(data_dir, output_dir, test_split = 0.2, val_split = 0.2):
     print("Done building dataset")
 
 def build_tiny_dataset(limit = 10):
-    data_dir    = os.path.join(project_folder,'data_storage','tiny_raw_input')
-    dataset_dir = os.path.join(project_folder,'data_storage','tiny_dataset')
+    data_dir    = os.path.join(datasets_folder,'tiny_raw_input')
+    dataset_dir = os.path.join(datasets_folder,'tiny_dataset')
     extract_raw_data(data_dir,overwrite = True, limit = limit)
     split_test_set(data_dir, dataset_dir)
 
@@ -275,6 +275,6 @@ def build_tiny_dataset(limit = 10):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    build_tiny_dataset()
+    # build_tiny_dataset()
     # extract_raw_data(args.data_dir, overwrite = True, limit = None)
-    # split_test_set(args.data_dir,args.output_dir)
+    split_test_set(args.data_dir,args.output_dir)

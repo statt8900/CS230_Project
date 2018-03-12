@@ -11,11 +11,12 @@ import utils
 import model.net as net
 import model.data_loader as data_loader
 
-project_folder = os.environ['CS230_Project_Folder']
+project_folder  = os.environ['CS230_Project_Folder']
+datasets_folder = os.environp['CS230_Datasets']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default=os.path.join('data_storage/datasets'), help="Directory containing the dataset")
-parser.add_argument('--model_dir', default='experiments/base_model', help="Directory containing params.json")
+parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'datasets'), help="Directory containing the dataset")
+parser.add_argument('--model_dir', default=os.path.join(project_folder,'experiments/base_model'), help="Directory containing params.json")
 parser.add_argument('--restore_file', default='best', help="name of the file in --model_dir \
                      containing weights to load")
 
