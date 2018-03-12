@@ -35,7 +35,7 @@ project_folder  = os.environ['CS230_Project_Folder']
 datasets_folder = os.environp['CS230_Datasets']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--output_dir', default=os.path.join(datasets_folder,'/datasets'), help="Where to write the new data")
+parser.add_argument('--output_dir', default=os.path.join(datasets_folder,'/dataset'), help="Where to write the new data")
 parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'/raw_inputs'), help="Where to read the raw data")
 
 #Sorting Functions for determining bond importance
