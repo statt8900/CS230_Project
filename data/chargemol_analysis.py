@@ -110,9 +110,25 @@ def unpack_directories():
         print id_curr
         os.system('mv '+os.path.join(chargemol_folder,id_curr,'chargemol_analysis','final','*')+ ' '+os.path.join(chargemol_folder,id_curr))
         os.system('rm -r '+os.path.join(chargemol_folder,id_curr,'chargemol_analysis'))
-    
+
+def change_permissions():
+    """Change permmissions on all chargemol folders"""
+    from os import stat
+    from pwd import getpwuid
+
+    def find_owner(filename):
+        return getpwuid(stat(filename).st_uid).pw_name
+
+    attempted_ids   = os.listdir(chargemol_folder)
+
+    for id_curr in attempted_ids:
+        dir_curr = os.path.join(chargemol_folder,id_curr)
+        if find_owner(dir_curr) == os.environ['USER']:
+            print 'Changing permmissions on {}'.format(dir_curr)
+            os.chmod(dir_curr, 0777)
 
 def load_chargemol():
+    change_permissions()
     unpack_directories()
     db.update_chargemol()
     move_finished_material_ids()
