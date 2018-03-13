@@ -39,7 +39,7 @@ class Net(nn.Module):
 
         #Convolutional Layers
         self.chemconv1      = custom_nn.ChemConv(7,params.num_filters,filter_length)
-        self.chemresblock1  = custom_nn.ChemResBlock(3,params.num_filters,filter_length,nn.ReLU(inplace = True))
+        self.chemresblock1  = custom_nn.ChemResBlock(params.num_layers,params.num_filters,filter_length,nn.ReLU(inplace = True))
 
         # 2 fully connected layers to transform the output of the convolution layers to the final output
         self.fc1            = nn.Linear(params.num_filters,30, bias=True)
