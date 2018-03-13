@@ -115,6 +115,7 @@ def r2(outputs, labels):
 
     Returns: (float) R2 in [0,1]
     """
+    import sklearn.metrics
     return sklearn.metrics.r2_score(labels,outputs)
 
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
