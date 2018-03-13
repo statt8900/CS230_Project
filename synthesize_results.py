@@ -61,15 +61,3 @@ def plot_loss(model_dir):
 if __name__ == "__main__":
     args = utils.parser.parse_args()
     plot_loss(args.model_dir)
-    # # Aggregate metrics from args.parent_dir directory
-    # metrics = dict()
-    # aggregate_metrics(args.parent_dir, metrics)
-    # table = metrics_to_table(metrics)
-    #
-    # # Display the table to terminal
-    # print(table)
-    #
-    # # Save results in parent_dir/results.md
-    # save_file = os.path.join(args.parent_dir, "results.md")
-    # with open(save_file, 'w') as f:
-    #     f.write(table)

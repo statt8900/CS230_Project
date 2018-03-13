@@ -35,7 +35,7 @@ def launch_training_job(parent_dir, data_dir, job_name, params):
     print(cmd)
     check_call(cmd, shell=True)
 
-def vary_learning_rate():
+def vary_learning_rate(args):
     """
     Perform hypersearch over one parameter
     """
@@ -71,6 +71,7 @@ def vary_filter_width(args):
 if __name__=='__main__':
     parser = utils.parser
     parser.add_argument('--hyperparameter',help='Variable being optimized')
+    parser.add_argument('--parent_dir', default='experiments/base_model', help="Directory containing params.json")
     args   = parser.parse_args()
     if   'learn' in args.hyperparameter: vary_learning_rate(args)
     elif 'depth' in args.hyperparameter: vary_filter_depth(args)
