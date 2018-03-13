@@ -31,11 +31,6 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
     # summary for current eval loop
     summ = []
 
-    # summary for current eval loop
-    dataloaders = data_loader.fetch_dataloader(['train', 'val'], args.data_dir, params)
-    train_dl    = dataloaders['train']
-    val_dl      = dataloaders['val']
-
     # compute metrics over the dataset
     for data_batch, labels_batch in dataloader:
 
