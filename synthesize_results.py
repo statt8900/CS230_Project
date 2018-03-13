@@ -1,19 +1,10 @@
 """Aggregates results from the metrics_eval_best_weights.json in a parent folder"""
-
-import argparse
-import json
-import os
+# External Modules
+import json, os, tabulate
 import numpy as np
-
-from tabulate import tabulate
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--parent_dir', default='experiments',
-                    help='Directory containing results of experiments')
-parser.add_argument('--model_dir', default='experiments/base_model',
-                    help='Directory containing results of experiments')
-
+# Internal Modules
+import utils
+###############################################################################
 
 def aggregate_metrics(parent_dir, metrics):
     """Aggregate the metrics of all experiments in folder `parent_dir`.
@@ -43,7 +34,7 @@ def metrics_to_table(metrics):
     # Get the headers from the first subdir. Assumes everything has the same metrics
     headers = metrics[list(metrics.keys())[0]].keys()
     table = [[subdir] + [values[h] for h in headers] for subdir, values in metrics.items()]
-    res = tabulate(table, headers, tablefmt='pipe')
+    res = tabulate.tabulate(table, headers, tablefmt='pipe')
 
     return res
 
@@ -68,8 +59,7 @@ def plot_loss(model_dir):
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
-
+    args = utils.parser.parse_args()
     plot_loss(args.model_dir)
     # # Aggregate metrics from args.parent_dir directory
     # metrics = dict()

@@ -1,20 +1,15 @@
-"""Peform hyperparemeters search"""
-
-import argparse
-import os
+# External Modules
+import os,sys,datetime,random
 from subprocess import check_call
-import sys
-
+# Internal Modules
 import utils
 
-project_folder  = os.environ['CS230_Project_Folder']
-datasets_folder = os.environp['CS230_Datasets']
-
+################################################################################
+"""
+Peform hyperparemeters search
+"""
+################################################################################
 PYTHON = sys.executable
-parser = argparse.ArgumentParser()
-parser.add_argument('--parent_dir', default=os.path.join(project_folder,'experiments/learning_rate'),
-                    help='Directory containing params.json')
-parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'tiny_dataset'), help="Directory containing the dataset")
 
 
 def launch_training_job(parent_dir, data_dir, job_name, params):
@@ -40,21 +35,38 @@ def launch_training_job(parent_dir, data_dir, job_name, params):
     print(cmd)
     check_call(cmd, shell=True)
 
+def vary_learning_rate():
+    """
+    Perform hypersearch over one parameter
+    """
+    args   = utils.parser.parse_args()
+    params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
+    learning_rates = [10 ** random.uniform(-6, 1) for _ in range(5)]
+    for val in learning_rates:
+        params.learning_rate = val
+        job_name = "learning_rate_"+str(val)
+        launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
-if __name__ == "__main__":
-    # Load the "reference" parameters from parent_dir json file
-    args = parser.parse_args()
-    json_path = os.path.join(args.parent_dir, 'params.json')
-    assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
-    params = utils.Params(json_path)
+def vary_filter_depth():
+    """
+    Perform hypersearch over one parameter
+    """
+    args   = utils.parser.parse_args()
+    params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
+    filter_depths = [random.randint(10,100) for _ in range(5)]
+    for val in filter_depths:
+        params.filter_depth = val
+        job_name = "filter_depth_"+str(val)
+        launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
-    # Perform hypersearch over one parameter
-    learning_rates = [1e-4, 1e-3, 1e-2]
-
-    for learning_rate in learning_rates:
-        # Modify the relevant parameter in params
-        params.learning_rate = learning_rate
-
-        # Launch job (name has to be unique)
-        job_name = "learning_rate_{}".format(learning_rate)
+def vary_filter_width():
+    """
+    Perform hypersearch over one parameter
+    """
+    args   = utils.parser.parse_args()
+    params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
+    filter_widths = [random.randint(10,30) for _ in range(5)]
+    for val in filter_widths:
+        params.filter_width = val
+        job_name = "filter_width_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)

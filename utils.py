@@ -1,30 +1,29 @@
-import json
-import logging
-import os
-import shutil
+# External Modules
+import json, logging, os, shutil, torch, argparse
 
-import torch
+
+#################################################################
+# Params related
+################
 
 class Params():
     """Class that loads hyperparameters from a json file.
-
     Example:
-    ```
-    params = Params(json_path)
-    print(params.learning_rate)
-    params.learning_rate = 0.5  # change the value of learning_rate in params
-    ```
+        params = Params(json_path)
+        print(params.learning_rate)
+        params.learning_rate = 0.5  # change the value of learning_rate in params
     """
 
     def __init__(self, json_path):
         with open(json_path) as f:
+            assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
             params = json.load(f)
             self.__dict__.update(params)
 
     def save(self, json_path):
         with open(json_path, 'w') as f:
             json.dump(self.__dict__, f, indent=4)
-            
+
     def update(self, json_path):
         """Loads parameters from json file"""
         with open(json_path) as f:
@@ -35,44 +34,42 @@ class Params():
     def dict(self):
         """Gives dict-like access to Params instance by `params.dict['learning_rate']"""
         return self.__dict__
-
+#################################################################
+# Misc
+################
 
 class RunningAverage():
     """A simple class that maintains the running average of a quantity
-    
     Example:
-    ```
-    loss_avg = RunningAverage()
-    loss_avg.update(2)
-    loss_avg.update(4)
-    loss_avg() = 3
-    ```
+        loss_avg = RunningAverage()
+        loss_avg.update(2)
+        loss_avg.update(4)
+        loss_avg() = 3
     """
     def __init__(self):
         self.steps = 0
         self.total = 0
-    
+
     def update(self, val):
         self.total += val
         self.steps += 1
-    
+
     def __call__(self):
         return self.total/float(self.steps)
-        
-    
+
+################################################################################
+# Logger related
+################
+
 def set_logger(log_path):
     """Set the logger to log info in terminal and file `log_path`.
 
     In general, it is useful to have a logger so that every output to the terminal is saved
     in a permanent file. Here we save it to `model_dir/train.log`.
 
-    Example:
-    ```
-    logging.info("Starting training...")
-    ```
+    Example: logging.info("Starting training...")
 
-    Args:
-        log_path: (string) where to log
+    Args: log_path: (string) where to log
     """
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -91,7 +88,6 @@ def set_logger(log_path):
 
 def save_dict_to_json(d, json_path):
     """Saves dict of floats in json file
-
     Args:
         d: (dict) of float-castable values (np.float, int, float, etc.)
         json_path: (string) path to json file
@@ -105,7 +101,6 @@ def save_dict_to_json(d, json_path):
 def save_checkpoint(state, is_best, checkpoint):
     """Saves model and training parameters at checkpoint + 'last.pth.tar'. If is_best==True, also saves
     checkpoint + 'best.pth.tar'
-
     Args:
         state: (dict) contains model's state_dict, may contain other keys such as epoch, optimizer state_dict
         is_best: (bool) True if it is the best model seen till now
@@ -125,7 +120,6 @@ def save_checkpoint(state, is_best, checkpoint):
 def load_checkpoint(checkpoint, model, optimizer=None):
     """Loads model parameters (state_dict) from file_path. If optimizer is provided, loads state_dict of
     optimizer assuming it is present in checkpoint.
-
     Args:
         checkpoint: (string) filename which needs to be loaded
         model: (torch.nn.Module) model for which the parameters are loaded
@@ -140,3 +134,16 @@ def load_checkpoint(checkpoint, model, optimizer=None):
         optimizer.load_state_dict(checkpoint['optim_dict'])
 
     return checkpoint
+
+
+###################################
+# Parse Related
+###############
+datasets_folder = os.environ['CS230_Datasets']
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'dataset'), help="Directory containing the dataset")
+parser.add_argument('--model_dir', default='experiments/base_model', help="Directory containing params.json")
+parser.add_argument('--restore_file', default=None,
+                    help="Optional, name of the file in --model_dir containing weights to reload before \
+                    training")  # 'best' or 'train'
