@@ -65,5 +65,4 @@ if __name__ == "__main__":
 
     m = aggregate_metrics(sys.argv[1])
     tab = metrics_to_table(m)
-    with open(os.path.join(sys.argv[1],'summary.txt'), 'w') as f:
-        f.write(tabulate(table))
+    with open(os.path.join(sys.argv[1],'summary.txt'), 'w') as f: f.write(tab)
