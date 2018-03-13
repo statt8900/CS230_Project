@@ -69,8 +69,9 @@ def vary_filter_width(args):
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
 if __name__=='__main__':
-
-    args   = utils.parser.parse_args()
+    parser = utils.parser
+    parser.add_argument('--hyperparameter',help='Variable being optimized')
+    args   = parser.parse_args()
     if   'learn' in args.hyperparameter: vary_learning_rate(args)
     elif 'depth' in args.hyperparameter: vary_filter_depth(args)
     elif 'width' in args.hyperparameter: vary_filter_width(args)
