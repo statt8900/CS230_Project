@@ -3,10 +3,10 @@
 import json, os, tabulate
 import numpy as np
 # Internal Modules
-import utils
+import utils.net
 ###############################################################################
 
-def aggregate_metrics(parent_dir, metrics):
+def aggregate_metrics(parent_dir, metrics=net.metrics):
     """Aggregate the metrics of all experiments in folder `parent_dir`.
 
     Assumes that `parent_dir` contains multiple experiments, with their results stored in
@@ -59,5 +59,5 @@ def plot_loss(model_dir):
 
 
 if __name__ == "__main__":
-    args = utils.parser.parse_args()
-    plot_loss(args.model_dir)
+
+    aggregate_metrics(sys.argv[1])
