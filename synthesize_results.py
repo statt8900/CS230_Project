@@ -1,10 +1,10 @@
 """Aggregates results from the metrics_eval_best_weights.json in a parent folder"""
 # External Modules
-import json, os, tabulate
+import json, os,sys, tabulate
 import numpy as np
 # Internal Modules
-import utils.net
-###############################################################################
+import utils
+import model.net as net###############################################################################
 
 def aggregate_metrics(parent_dir, metrics=net.metrics):
     """Aggregate the metrics of all experiments in folder `parent_dir`.
@@ -28,6 +28,9 @@ def aggregate_metrics(parent_dir, metrics=net.metrics):
             continue
         else:
             aggregate_metrics(os.path.join(parent_dir, subdir), metrics)
+
+    return metrics
+
 
 
 def metrics_to_table(metrics):
@@ -60,4 +63,7 @@ def plot_loss(model_dir):
 
 if __name__ == "__main__":
 
-    aggregate_metrics(sys.argv[1])
+    m = aggregate_metrics(sys.argv[1])
+    tab = metrics_to_table(m)
+    with open(os.path.join(sys.argv[1],'summary.txt'), 'w') as f:
+        f.write(tabulate(table))
