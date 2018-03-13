@@ -105,9 +105,22 @@ def accuracy(outputs, labels):
     """
     return np.mean(np.abs(outputs-labels)/np.abs(labels)*100)
 
+def r2(outputs, labels):
+    """
+    Compute the Coefficient of Determination, given the outputs and labels for all images.
+
+    Args:
+        outputs: (np.ndarray) dimension batch_size x 6 - log softmax output of the model
+        labels: (np.ndarray) dimension batch_size, where each element is a value in [0, 1, 2, 3, 4, 5]
+
+    Returns: (float) R2 in [0,1]
+    """
+    return sklearn.metrics.r2_score(labels,outputs)
 
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
+
+    'r2':r2
     # 'accuracy': accuracy,
     # could add more metrics such as accuracy for each token type
 }
