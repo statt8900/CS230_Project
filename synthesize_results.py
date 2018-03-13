@@ -6,7 +6,7 @@ import numpy as np
 import utils
 import model.net as net###############################################################################
 
-def aggregate_metrics(parent_dir, metrics=net.metrics):
+def aggregate_metrics(parent_dir, metrics={}):
     """Aggregate the metrics of all experiments in folder `parent_dir`.
 
     Assumes that `parent_dir` contains multiple experiments, with their results stored in
@@ -36,8 +36,8 @@ def aggregate_metrics(parent_dir, metrics=net.metrics):
 def metrics_to_table(metrics):
     # Get the headers from the first subdir. Assumes everything has the same metrics
     headers = metrics[list(metrics.keys())[0]].keys()
-    print 'headers'
-    print metrics.items()
+    print 'headers',headers
+    print metrics
     table = [[subdir] + [values[h] for h in headers] for subdir, values in metrics.items()]
     res = tabulate.tabulate(table, headers, tablefmt='pipe')
 
