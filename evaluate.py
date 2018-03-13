@@ -6,7 +6,7 @@ from os.path import isfile,join
 # Internal Modules
 
 import numpy as np
-import torch
+import torch,logging
 from torch.autograd import Variable
 #import utils
 import model.net as net
