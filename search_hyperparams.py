@@ -39,7 +39,6 @@ def vary_learning_rate():
     """
     Perform hypersearch over one parameter
     """
-    args   = utils.parser.parse_args()
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
     learning_rates = [10 ** random.uniform(-6, 1) for _ in range(5)]
     for val in learning_rates:
@@ -47,11 +46,10 @@ def vary_learning_rate():
         job_name = "learning_rate_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
-def vary_filter_depth():
+def vary_filter_depth(args):
     """
     Perform hypersearch over one parameter
     """
-    args   = utils.parser.parse_args()
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
     filter_depths = [random.randint(10,100) for _ in range(5)]
     for val in filter_depths:
@@ -59,14 +57,20 @@ def vary_filter_depth():
         job_name = "filter_depth_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
-def vary_filter_width():
+def vary_filter_width(args):
     """
     Perform hypersearch over one parameter
     """
-    args   = utils.parser.parse_args()
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
     filter_widths = [random.randint(10,30) for _ in range(5)]
     for val in filter_widths:
         params.filter_width = val
         job_name = "filter_width_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
+
+if __name__=='__main__':
+
+    args   = utils.parser.parse_args()
+    if   'learn' in args.hyperparameter: vary_learning_rate(args)
+    elif 'depth' in args.hyperparameter: vary_filter_depth(args)
+    elif 'width' in args.hyperparameter: vary_filter_width(args)
