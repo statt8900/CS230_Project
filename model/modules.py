@@ -103,7 +103,7 @@ class ChemConv(nn.Module):
         # #
         self.filters   = nn.Parameter(torch.Tensor(out_depth,filter_length,in_depth+2))
         self.filters.data.normal_()
-        self.filters.data *= 1/float(self.in_depth)/float(self.out_depth)
+        self.filters.data *= 1/float(self.in_depth)/1000.0
 
     def forward(self, node_property_tensor):
         """
