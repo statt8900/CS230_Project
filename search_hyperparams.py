@@ -40,7 +40,7 @@ def vary_learning_rate(args):
     Perform hypersearch over one parameter
     """
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
-    learning_rates = [10 ** random.uniform(-6, 1) for _ in range(4)]
+    learning_rates = [10 ** x for x in [-5,-4,-3,-2]]
     for val in learning_rates:
         params.learning_rate = val
         job_name = "learning_rate_"+str(val)
