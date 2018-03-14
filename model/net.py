@@ -116,7 +116,10 @@ def r2(outputs, labels):
     Returns: (float) R2 in [0,1]
     """
     import sklearn.metrics
-    return sklearn.metrics.r2_score(labels,outputs)
+    def good(x): return not np.isnan(x) and not np.isinf(x)
+    def goods((a,b)): return good(a) and good(b)
+    outputs_,labels_ = zip(*filter(goods,zip(outputs,labels)))
+    return sklearn.metrics.r2_score(labels_,outputs_)
 
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
