@@ -40,7 +40,7 @@ def vary_learning_rate(args):
     Perform hypersearch over one parameter
     """
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
-    learning_rates = [10 ** x for x in [-5,-4,-3,-2]]
+    learning_rates = [10 ** x for x in [-5,-4]]
     for val in learning_rates:
         params.learning_rate = val
         job_name = "learning_rate_"+str(val)
@@ -51,10 +51,10 @@ def vary_num_layers(args):
     Perform hypersearch over one parameter
     """
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
-    filter_depths = [5,7,9,11]
-    for val in filter_depths:
-        params.filter_depth = val
-        job_name = "filter_depth_"+str(val)
+    val = [5,7,9]
+    for val in vals:
+        params.num_layers = val
+        job_name = "num_layers_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
 def vary_num_filters(args):
@@ -62,10 +62,10 @@ def vary_num_filters(args):
     Perform hypersearch over one parameter
     """
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
-    filter_widths = [100,150,250,300]
-    for val in filter_widths:
-        params.filter_width = val
-        job_name = "filter_width_"+str(val)
+    vals = [150,250]
+    for val in vals:
+        params.num_filters = val
+        job_name = "num_filters_"+str(val)
         launch_training_job(args.parent_dir, args.data_dir, job_name, params)
 
 if __name__=='__main__':
