@@ -1,21 +1,12 @@
 """Aggregates results from the metrics_eval_best_weights.json in a parent folder"""
-
-import argparse
-import json
-import os
+# External Modules
+import json, os,sys, tabulate
 import numpy as np
+# Internal Modules
+import utils
+import model.net as net###############################################################################
 
-from tabulate import tabulate
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--parent_dir', default='experiments',
-                    help='Directory containing results of experiments')
-parser.add_argument('--model_dir', default='experiments/base_model',
-                    help='Directory containing results of experiments')
-
-
-def aggregate_metrics(parent_dir, metrics):
+def aggregate_metrics(parent_dir, metrics={}):
     """Aggregate the metrics of all experiments in folder `parent_dir`.
 
     Assumes that `parent_dir` contains multiple experiments, with their results stored in
@@ -38,12 +29,17 @@ def aggregate_metrics(parent_dir, metrics):
         else:
             aggregate_metrics(os.path.join(parent_dir, subdir), metrics)
 
+    return metrics
+
+
 
 def metrics_to_table(metrics):
     # Get the headers from the first subdir. Assumes everything has the same metrics
     headers = metrics[list(metrics.keys())[0]].keys()
+    print 'headers',headers
+    print metrics
     table = [[subdir] + [values[h] for h in headers] for subdir, values in metrics.items()]
-    res = tabulate(table, headers, tablefmt='pipe')
+    res = tabulate.tabulate(table, headers, tablefmt='pipe')
 
     return res
 
@@ -68,18 +64,7 @@ def plot_loss(model_dir):
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
 
-    plot_loss(args.model_dir)
-    # # Aggregate metrics from args.parent_dir directory
-    # metrics = dict()
-    # aggregate_metrics(args.parent_dir, metrics)
-    # table = metrics_to_table(metrics)
-    #
-    # # Display the table to terminal
-    # print(table)
-    #
-    # # Save results in parent_dir/results.md
-    # save_file = os.path.join(args.parent_dir, "results.md")
-    # with open(save_file, 'w') as f:
-    #     f.write(table)
+    m = aggregate_metrics(sys.argv[1])
+    tab = metrics_to_table(m)
+    with open(os.path.join(sys.argv[1],'summary.txt'), 'w') as f: f.write(tab)

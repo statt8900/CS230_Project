@@ -39,7 +39,7 @@ class Net(nn.Module):
 
         #Convolutional Layers
         self.chemconv1      = custom_nn.ChemConv(7,params.num_filters,filter_length)
-        self.chemresblock1  = custom_nn.ChemResBlock(3,params.num_filters,filter_length,nn.ReLU(inplace = True))
+        self.chemresblock1  = custom_nn.ChemResBlock(params.num_layers,params.num_filters,filter_length,nn.ReLU(inplace = True))
 
         # 2 fully connected layers to transform the output of the convolution layers to the final output
         self.fc1            = nn.Linear(params.num_filters,30, bias=True)
@@ -105,9 +105,26 @@ def accuracy(outputs, labels):
     """
     return np.mean(np.abs(outputs-labels)/np.abs(labels)*100)
 
+def r2(outputs, labels):
+    """
+    Compute the Coefficient of Determination, given the outputs and labels for all images.
+
+    Args:
+        outputs: (np.ndarray) dimension batch_size x 6 - log softmax output of the model
+        labels: (np.ndarray) dimension batch_size, where each element is a value in [0, 1, 2, 3, 4, 5]
+
+    Returns: (float) R2 in [0,1]
+    """
+    import sklearn.metrics
+    def good(x): return not np.isnan(x) and not np.isinf(x)
+    def goods((a,b)): return good(a) and good(b)
+    outputs_,labels_ = zip(*filter(goods,zip(outputs,labels)))
+    return sklearn.metrics.r2_score(labels_,outputs_)
 
 # maintain all metrics required in this dictionary- these are used in the training and evaluation loops
 metrics = {
+
+    'r2':r2
     # 'accuracy': accuracy,
     # could add more metrics such as accuracy for each token type
 }

@@ -1,34 +1,24 @@
-"""Train the model"""
-
-import argparse
-import logging
-import os
-
+# External Modules
+import torch,logging
 import numpy as np
-import torch
 import torch.optim as optim
 from torch.autograd import Variable
 from tqdm import tqdm
+from os.path import join
 
+# Internal Modules
 import utils
 import model.net as net
 import model.data_loader as data_loader
 from evaluate import evaluate
 
-project_folder  = os.environ['CS230_Project_Folder']
-datasets_folder = os.environ['CS230_Datasets']
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'dataset'), help="Directory containing the dataset")
-parser.add_argument('--model_dir', default='experiments/base_model', help="Directory containing params.json")
-parser.add_argument('--restore_file', default=None,
-                    help="Optional, name of the file in --model_dir containing weights to reload before \
-                    training")  # 'best' or 'train'
-
-
+##############################################################################
+"""
+Train the model
+"""
+##############################################################################
 def train(model, optimizer, loss_fn, dataloader, metrics, params):
     """Train the model on `num_steps` batches
-
     Args:
         model: (torch.nn.Module) the neural network
         optimizer: (torch.optim) optimizer for parameters of model
@@ -121,10 +111,9 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
     """
     # reload weights from restore_file if specified
     if restore_file is not None:
-        restore_path = os.path.join(args.model_dir, args.restore_file + '.pth.tar')
+        restore_path = join(args.model_dir, args.restore_file + '.pth.tar')
         logging.info("Restoring parameters from {}".format(restore_path))
         utils.load_checkpoint(restore_path, model, optimizer)
-
 
     best_val_loss       = 1e10
     total_train_loss    = np.array([])
@@ -141,7 +130,7 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
 
         val_loss = val_metrics['loss']
-        is_best = val_loss<=best_val_loss
+        is_best  = val_loss <= best_val_loss
         total_val_loss = np.append(total_val_loss, [val_loss]*len(loss_array))
 
         # Save weights
@@ -156,24 +145,23 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
             best_val_loss = val_loss
 
             # Save best val metrics in a json file in the model directory
-            best_json_path = os.path.join(model_dir, "metrics_val_best_weights.json")
+            best_json_path = join(model_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
 
         # Save latest val metrics in a json file in the model directory
-        last_json_path = os.path.join(model_dir, "metrics_val_last_weights.json")
+        last_json_path = join(model_dir, "metrics_val_last_weights.json")
         utils.save_dict_to_json(val_metrics, last_json_path)
 
-        np.save(os.path.join(model_dir,"train_loss"),total_train_loss)
-        np.save(os.path.join(model_dir,"val_loss"),total_val_loss)
-
+        np.save(join(model_dir,"train_loss"),total_train_loss)
+        np.save(join(model_dir,"val_loss"),total_val_loss)
+####################################################################################
 
 if __name__ == '__main__':
 
     # Load the parameters from json file
-    args = parser.parse_args()
-    json_path = os.path.join(args.model_dir, 'params.json')
-    assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
-    params = utils.Params(json_path)
+    args = utils.parser.parse_args()
+
+    params = utils.Params(join(args.model_dir, 'params.json'))
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()
@@ -183,15 +171,15 @@ if __name__ == '__main__':
     if params.cuda: torch.cuda.manual_seed(230)
 
     # Set the logger
-    utils.set_logger(os.path.join(args.model_dir, 'train.log'))
-    print(os.path.join(args.model_dir, 'train.log'))
+    utils.set_logger(join(args.model_dir, 'train.log'))
+
     # Create the input data pipeline
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
     dataloaders = data_loader.fetch_dataloader(['train', 'val'], args.data_dir, params)
-    train_dl = dataloaders['train']
-    val_dl = dataloaders['val']
+    train_dl    = dataloaders['train']
+    val_dl      = dataloaders['val']
 
     logging.info("- done.")
 
@@ -205,5 +193,6 @@ if __name__ == '__main__':
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
+
     train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
                        args.restore_file)

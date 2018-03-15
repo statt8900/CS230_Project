@@ -128,6 +128,7 @@ def change_permissions():
             os.chmod(dir_curr, 0777)
 
 def load_chargemol():
+    change_permissions()
     unpack_directories()
     db.update_chargemol()
     move_finished_material_ids()

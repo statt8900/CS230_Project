@@ -36,34 +36,22 @@ def query_all_of_materials_project():
     mp_rest = MPRester(API_key)
 
     #properties useful for project
-    useful_properties =     [u'energy'
-                            ,u'band_gap'
-                            ,u'e_above_hull'
-                            ,u'elements'
-                            ,u'pretty_formula'
-                            ,u'formation_energy_per_atom'
-                            ,u'cif'
-                            ,u'density'
-                            ,u'material_id'
-                            ,u'nelements'
-                            ,u'energy_per_atom']
-    #Other Possible Properties
-    #Full description of each property at
-    #https://materialsproject.org/docs/api#materials_.28calculated_materials_data.29
-                            # ,u'is_compatible'
-                            # ,u'elasticity'
-                            # ,u'unit_cell_formula'
-                            # ,u'oxide_type'
-                            # ,u'hubbards'
-                            # ,u'task_ids'
-                            # ,u'nsites'
-                            # ,u'icsd_id'
-                            # ,u'tags'
-                            # ,u'volume'
-                            # ,u'total_magnetization'
-                            # ,u'is_hubbard'
-                            # ,u'spacegroup'
-                            # ,u'full_formula'
+    useful_properties = [u'energy'
+                        ,u'band_gap'
+                        ,u'e_above_hull'
+                        ,u'elements'
+                        ,u'pretty_formula'
+                        ,u'formation_energy_per_atom'
+                        ,u'cif'
+                        ,u'density'
+                        ,u'material_id'
+                        ,u'nelements'
+                        ,u'energy_per_atom']
+
+    #Other Properties # 'is_compatible','elasticity','unit_cell_formula'
+                        # 'oxide_type','hubbards','task_ids','nsites'
+                        # 'icsd_id','tags','volume','total_magnetization'
+                        # 'is_hubbard','spacegroup','full_formula'
 
     #Divide the elements into groups of 1 to make small queries so PMG doesn't
     #get mad
@@ -74,7 +62,7 @@ def query_all_of_materials_project():
     #For each criteria query the materials project and append the output
     query_output = []
     for criteria in criteria_list:
-        print 'Querying Elements in Criteria : {0}'.format(criteria)
+        print('Querying Elements in Criteria : {0}'.format(criteria))
         query_output += mp_rest.query(criteria, useful_properties)
 
     #Need to remove any duplicate jobs (i.e. jobs with same material_id)
@@ -113,8 +101,7 @@ def load_database_from_mat_proj_pickle():
     new_output = []
     output = read_mat_proj_pickle()
     for i, row in enumerate(output):
-        if i%1000 == 0:
-            print i
+        if i%1000 == 0: print(i)
         new_row = deepcopy(row)
         atoms_obj = convert_cif_to_ase(row['cif'])
         new_row['atoms_obj'] = traj_preparer(atoms_obj)
@@ -122,7 +109,5 @@ def load_database_from_mat_proj_pickle():
         new_row['chargemol'] = 0
         new_row['bond_json'] = None
         new_output.append(new_row)
-        try:
-            load_row_dictionary(new_row)
-        except sqlite3.OperationalError:
-            pass
+        try:                             load_row_dictionary(new_row)
+        except sqlite3.OperationalError: pass
