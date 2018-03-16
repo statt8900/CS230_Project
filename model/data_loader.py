@@ -12,8 +12,6 @@ from CS230_Project import utils
 """This module contains classes for gathering data for model training"""
 ################################################################################
 
-necessary_environ_variables = ['CS230_database_path','CS230_Project_Folder']
-assert all([x in os.environ.keys() for x in necessary_environ_variables]),\
 'Need all of the necessary environ variables to query the database'
 
 class DFTNetDataset(Dataset):
@@ -32,9 +30,7 @@ class DFTNetDataset(Dataset):
         self.filenames = [os.path.join(data_dir, f) for f in self.filenames if f.endswith('.torch')]
         self.transform = transform
 
-    def __len__(self):
-        # return size of dataset
-        return len(self.filenames)
+    def __len__(self): return len(self.filenames) # return size of dataset
 
     def __getitem__(self, idx):
         """
@@ -68,39 +64,19 @@ def fetch_dataloader(types, data_dir, params):
     """
     dataloaders = {}
 
-    for split in ['train', 'val', 'test']:
-        if split in types:
-            path = os.path.join(data_dir, "{}".format(split))
+    all_types = ['train', 'val', 'test']
 
-            # use the train_transformer if training data, else use eval_transformer without random flip
-            if split == 'train':
-                dl = DataLoader(DFTNetDataset(path), batch_size=params.batch_size, shuffle=True,
-                                        num_workers=params.num_workers,
-                                        pin_memory=params.cuda)
-            else:
-                dl = DataLoader(DFTNetDataset(path), batch_size=params.batch_size, shuffle=False,
-                                num_workers=params.num_workers,
-                                pin_memory=params.cuda)
+    assert all([t in all_types for t in types])
 
-            dataloaders[split] = dl
+    for t in types:
+        path = os.path.join(data_dir, t)
+
+        # use the train_transformer if training data, else use eval_transformer without random flip
+        dl = DataLoader(DFTNetDataset(path), batch_size=params.batch_size
+                , shuffle     = t == 'train' # only shuffle if training
+                , num_workers = params.num_workers
+                , pin_memory  = params.cuda)
+
+        dataloaders[t] = dl
 
     return dataloaders
-
-
-
-#ARCHIVE
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--data_dir', default='data/64x64_SIGNS', help="Directory containing the dataset")
-# parser.add_argument('--model_dir', default='experiments/base_model', help="Directory containing params.json")
-# parser.add_argument('--restore_file', default=None,
-#                     help="Optional, name of the file in --model_dir containing weights to reload before \
-#                     training")  # 'best' or 'train'
-
-# if __name__ == '__main__':
-#     args = parser.parse_args()
-#     json_path = os.path.join(args.model_dir, 'params.json')
-#     assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
-#     params = utils.Params(json_path)
-#     # use GPU if available
-#     params.cuda = torch.cuda.is_available()
-#     dataloaders = fetch_dataloader(['train','val'],args.data_dir, params)

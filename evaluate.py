@@ -1,24 +1,16 @@
 """Evaluates the model"""
 
-import argparse
-import logging
-import os
+# External Modules
+from os.path import isfile,join
+
+# Internal Modules
 
 import numpy as np
-import torch
+import torch,logging
 from torch.autograd import Variable
-import utils
+#import utils
 import model.net as net
 import model.data_loader as data_loader
-
-project_folder  = os.environ['CS230_Project_Folder']
-datasets_folder = os.environ['CS230_Datasets']
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'dataset'), help="Directory containing the dataset")
-parser.add_argument('--model_dir', default=os.path.join(project_folder,'experiments/base_model'), help="Directory containing params.json")
-parser.add_argument('--restore_file', default='best', help="name of the file in --model_dir \
-                     containing weights to load")
 
 
 def evaluate(model, loss_fn, dataloader, metrics, params):
@@ -49,7 +41,6 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
         connectivity_tensor_var         = Variable(connectivity_tensor)
         bond_property_tensor_var        = Variable(bond_property_tensor)
         mask_atom_tensor_var            = Variable(mask_atom_tensor)
-
 
         if params.cuda:
             node_property_tensor_var    = node_property_tensor_var.cuda(async=True)
@@ -82,14 +73,10 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
 
 
 if __name__ == '__main__':
-    """
-        Evaluate the model on the test set.
-    """
+    """ Evaluate the model on the test set """
     # Load the parameters
-    args = parser.parse_args()
-    json_path = os.path.join(args.model_dir, 'params.json')
-    assert os.path.isfile(json_path), "No json configuration file found at {}".format(json_path)
-    params = utils.Params(json_path)
+    args   = utils.parser.parse_args()
+    params = utils.Params(join(args.model_dir, 'params.json'))
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()     # use GPU is available
@@ -99,10 +86,10 @@ if __name__ == '__main__':
     if params.cuda: torch.cuda.manual_seed(230)
 
     # Get the logger
-    utils.set_logger(os.path.join(args.model_dir, 'evaluate.log'))
+    utils.set_logger(join(args.model_dir, 'evaluate.log'))
 
     # Create the input data pipeline
-    logging.info("Creating the dataset...")
+    logging.info("Loading the dataset...")
 
     # fetch dataloaders
     dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
@@ -119,9 +106,9 @@ if __name__ == '__main__':
     logging.info("Starting evaluation")
 
     # Reload weights from the saved file
-    utils.load_checkpoint(os.path.join(args.model_dir, args.restore_file + '.pth.tar'), model)
+    utils.load_checkpoint(join(args.model_dir, args.restore_file + '.pth.tar'), model)
 
     # Evaluate
     test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
-    save_path = os.path.join(args.model_dir, "metrics_test_{}.json".format(args.restore_file))
+    save_path = join(args.model_dir, "metrics_test_{}.json".format(args.restore_file))
     utils.save_dict_to_json(test_metrics, save_path)
