@@ -55,6 +55,7 @@ def plot_loss(model_dir):
     fig, ax = plt.subplots()
     ax.plot(total_train_loss,color = 'r', label = 'Training MSE')
     ax.plot(total_val_loss, color = 'b', label = 'Validation MSE')
+    ax.set_yscale('log')
     plt.xlabel('Iterations',fontsize = 14)
     plt.ylabel('Formation Energy MSE (eV/atom)',fontsize = 14)
     plt.legend()
