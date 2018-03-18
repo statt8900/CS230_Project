@@ -8,12 +8,12 @@ from os.path import isfile,join
 import numpy as np
 import torch,logging
 from torch.autograd import Variable
-#import utils
+import utils
 import model.net as net
 import model.data_loader as data_loader
 
 
-def evaluate(model, loss_fn, dataloader, metrics, params):
+def evaluate(model, loss_fn, dataloader, metrics, params, parity = False):
     """Evaluate the model on `num_steps` batches.
 
     Args:
@@ -30,7 +30,8 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
 
     # summary for current eval loop
     summ = []
-
+    test_labels = np.array([])
+    test_output = np.array([])
     # compute metrics over the dataset
     for data_batch, labels_batch in dataloader:
 
@@ -59,6 +60,9 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
         output_batch = output_batch.data.cpu().numpy()
         labels_batch = labels_batch_var.data.cpu().numpy()
 
+        test_output = np.append(test_output, output_batch)
+        test_labels = np.append(test_labels, labels_batch)
+
         # compute all metrics on this batch
         summary_batch = {metric: metrics[metric](output_batch, labels_batch)
                          for metric in metrics}
@@ -69,13 +73,21 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
     metrics_mean = {metric:np.mean([x[metric] for x in summ]) for metric in summ[0]}
     metrics_string = " ; ".join("{}: {:05.3f}".format(k, v) for k, v in metrics_mean.items())
     logging.info("- Eval metrics : " + metrics_string)
+
+    if parity:
+        np.save('test_labels', test_labels)
+        np.save('test_output', test_output)
+
     return metrics_mean
 
 
 if __name__ == '__main__':
     """ Evaluate the model on the test set """
     # Load the parameters
-    args   = utils.parser.parse_args()
+    parser = utils.parser
+    parser.add_argument('--data_type', default='test', help="dataset to evaluate (test, val, train)")
+    parser.add_argument('--batch_size', default=None, help="batch_size for evaluation will default to params.json value")
+    args   = parser.parse_args()
     params = utils.Params(join(args.model_dir, 'params.json'))
 
     # use GPU if available
@@ -89,11 +101,13 @@ if __name__ == '__main__':
     utils.set_logger(join(args.model_dir, 'evaluate.log'))
 
     # Create the input data pipeline
-    logging.info("Loading the dataset...")
+    logging.info("Loading the "+args.data_type+ " dataset...")
 
     # fetch dataloaders
-    dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
-    test_dl = dataloaders['test']
+    if not args.batch_size is None:
+        params.batch_size = args.batch_size
+    dataloaders = data_loader.fetch_dataloader([args.data_type], args.data_dir, params)
+    test_dl = dataloaders[args.data_type]
 
     logging.info("- done.")
 
@@ -103,12 +117,12 @@ if __name__ == '__main__':
     loss_fn = net.loss_fn
     metrics = net.metrics
 
-    logging.info("Starting evaluation")
+    logging.info("Starting evaluation on the "+args.data_type+" dataset")
 
     # Reload weights from the saved file
     utils.load_checkpoint(join(args.model_dir, args.restore_file + '.pth.tar'), model)
 
     # Evaluate
-    test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
-    save_path = join(args.model_dir, "metrics_test_{}.json".format(args.restore_file))
+    test_metrics = evaluate(model, loss_fn, test_dl, metrics, params, parity=True)
+    save_path = join(args.model_dir, "metrics_{}_{}.json".format(args.data_type,args.restore_file))
     utils.save_dict_to_json(test_metrics, save_path)
