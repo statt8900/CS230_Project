@@ -55,9 +55,19 @@ def plot_loss(model_dir):
     total_train_loss = np.load(train_loss_pth)
     total_val_loss = np.load(val_loss_pth)
 
+    total_train_loss_mean = np.zeros((len(total_train_loss),))
+    total_train_loss_mean[0] = total_train_loss[0]
+    old_entry = total_train_loss[0]
+
+    for i, loss  in enumerate(total_train_loss[1:]):
+        new_entry = (loss*0.01+0.99*old_entry)/(1-0.01**(i+1))
+        old_entry = new_entry
+        total_train_loss_mean[i+1] = new_entry
+
     fig, ax = plt.subplots()
-    ax.plot(total_train_loss,color = 'r', label = 'Training MSE')
-    ax.plot(total_val_loss, color = 'b', label = 'Validation MSE')
+    ax.plot(total_val_loss,color = 'r',label = 'Validation MSE')
+    ax.plot(total_train_loss,c = 'g', label = 'Training MSE')
+    # ax.scatter(range(len(total_train_loss_mean)),total_train_loss, c = 'b', s=1, label = 'Validation MSE')
     ax.set_yscale('log')
     plt.xlabel('Iterations',fontsize = 14)
     plt.ylabel('Formation Energy MSE (eV/atom)',fontsize = 14)

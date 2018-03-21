@@ -191,7 +191,8 @@ if __name__ == '__main__':
 
     # Define the model and optimizer
     model = net.Net(params).cuda() if params.cuda else net.Net(params)
-    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
+    params.weight_decay = 0 if 'weight_decay' not in params.dict.keys() else params.weight_decay
+    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate, weight_decay = params.weight_decay)
 
     # fetch loss function and metrics
     loss_fn = net.loss_fn
