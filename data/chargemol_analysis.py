@@ -126,6 +126,10 @@ def change_permissions():
         if find_owner(dir_curr) == os.environ['USER']:
             print 'Changing permmissions on {}'.format(dir_curr)
             os.chmod(dir_curr, 0777)
+            os.chmod(os.path.join(dir_curr,'final'), 0777)
+            os.chdir(os.path.join(dir_curr,'final'))
+            for file_curr in os.listdir('.'):
+                os.chmod(file_curr,0777)
 
 def load_chargemol():
     change_permissions()
