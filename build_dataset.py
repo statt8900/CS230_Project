@@ -32,7 +32,7 @@ import CS230_Project.data.database_management as db
 from CS230_Project.misc.utils import traj_rebuild
 
 project_folder  = os.environ['CS230_Project_Folder']
-datasets_folder = os.environp['CS230_Datasets']
+datasets_folder = os.environ['CS230_Datasets']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_dir', default=os.path.join(datasets_folder,'/dataset'), help="Where to write the new data")
@@ -47,13 +47,14 @@ class RawDataExtractor(object):
     storage_directories :: list of storage directories where chargemol analysis,
                             result.json, and final.traj are stored
     """
-    def __init__(self,constraints = [], limit = 10, filter_length = 13, num_atoms_after_padding = 100):
+    def __init__(self,constraints = [], limit = 10, filter_length = 13, num_atoms_after_padding = 100, chargemol_included = True):
         default_constraints = [PMG_Entries.chargemol==1, PMG_Entries.num_atoms<=num_atoms_after_padding]
         default_constraints += constraints
         self.query          = db.Query(constraints = default_constraints, limit = limit, verbose = True)
         self.output_dict    = self.query.query_dict(cols = ['*'])
         self.material_ids   = self.query.query_col(PMG_Entries.material_id)
         self.num_atoms_after_padding      = num_atoms_after_padding
+        self.chargemol_included = chargemol_included
         self.filter_length  = filter_length
         self.attributes     = ['en_pauling'
                               ,'dipole_polarizability'
@@ -172,7 +173,12 @@ class RawDataExtractor(object):
 
         #Get number of atoms and initialize each variable
         n_atoms              = row_dict['num_atoms']
-        bond_property_tensor = torch.zeros(self.num_atoms_after_padding,self.filter_length,2)
+
+        #Set width of bond bond_property_tensor depending on if bondorder is included
+        bond_property_tensor_width = 2 if self.chargemol_included else 1
+        bond_property_tensor = torch.zeros(self.num_atoms_after_padding,self.filter_length,bond_property_tensor_width)
+
+
         count                = torch.ones(self.num_atoms_after_padding).int()
         ind_arrays           = torch.zeros(self.num_atoms_after_padding,self.filter_length).int()
 
@@ -181,7 +187,10 @@ class RawDataExtractor(object):
             fromNode, toNode = int(fromNode), int(toNode)
             if bondorder>bond_order_cutoff and count[fromNode]<self.filter_length-1:
                 #Convert float to int
-                bond_property_tensor[fromNode][count[fromNode]] = torch.Tensor([dis, bondorder])
+                if self.chargemol_included:
+                    bond_property_tensor[fromNode][count[fromNode]] = torch.Tensor([dis, bondorder])
+                else:
+                    bond_property_tensor[fromNode][count[fromNode]] = torch.Tensor([dis])
                 ind_arrays[fromNode][count[fromNode]] = toNode
                 count[fromNode] += 1
 
@@ -208,7 +217,7 @@ class RawDataExtractor(object):
         return output
 
 
-def extract_raw_data(output_dir, overwrite = False, limit = None):
+def extract_raw_data(output_dir, overwrite = False, limit = None, chargemol_included = True):
     """Extracts all of the raw data from sqlite3 database, transforms it into
     Net inputs then saves it to output_dir"""
     if not os.path.exists(output_dir):
@@ -217,7 +226,7 @@ def extract_raw_data(output_dir, overwrite = False, limit = None):
         print 'Warning: {} already exists'.format(output_dir)
 
     #Initialize extractor
-    extractor = RawDataExtractor(limit = limit)
+    extractor = RawDataExtractor(limit = limit, chargemol_included = chargemol_included)
     material_ids = extractor.material_ids
 
     #If we are not overwriting existing raw_inputs remove existing material_ids
@@ -265,16 +274,16 @@ def split_test_set(data_dir, output_dir, test_split = 0.2, val_split = 0.2):
 
     print("Done building dataset")
 
-def build_tiny_dataset(limit = 10):
+def build_tiny_dataset(limit = 10, chargemol_included = True):
     data_dir    = os.path.join(datasets_folder,'tiny_raw_input')
     dataset_dir = os.path.join(datasets_folder,'tiny_dataset')
-    extract_raw_data(data_dir,overwrite = True, limit = limit)
+    extract_raw_data(data_dir,overwrite = True, limit = limit,chargemol_included = chargemol_included)
     split_test_set(data_dir, dataset_dir)
 
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    # build_tiny_dataset()
+    build_tiny_dataset(chargemol_included = False)
     # extract_raw_data(args.data_dir, overwrite = True, limit = None)
-    split_test_set(args.data_dir,args.output_dir)
+    # split_test_set(args.data_dir,args.output_dir)

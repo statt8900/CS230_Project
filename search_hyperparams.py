@@ -62,7 +62,7 @@ def vary_num_filters(args):
     Perform hypersearch over one parameter
     """
     params = utils.Params(os.path.join(args.parent_dir, 'params.json'))
-    vals = [150,250]
+    vals = [100]
     for val in vals:
         params.num_filters = val
         job_name = "num_filters_"+str(val)

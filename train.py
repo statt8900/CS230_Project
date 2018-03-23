@@ -1,5 +1,5 @@
 # External Modules
-import torch,logging
+import torch,logging,json
 import numpy as np
 import torch.optim as optim
 from torch.autograd import Variable
@@ -115,9 +115,15 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         logging.info("Restoring parameters from {}".format(restore_path))
         utils.load_checkpoint(restore_path, model, optimizer)
 
-    best_val_loss       = 1e10
-    total_train_loss    = np.array([])
-    total_val_loss      = np.array([])
+        #restore all state parameters
+        best_val_loss = json.load(open(join(args.model_dir, 'metrics_val_best_weights.json')))['loss']
+        total_train_loss    = np.load(join(args.model_dir, 'train_loss.npy'))
+        total_val_loss      = np.load(join(args.model_dir, 'val_loss.npy'))
+    else:
+        best_val_loss       = 1e10
+        total_train_loss    = np.array([])
+        total_val_loss      = np.array([])
+
     for epoch in range(params.num_epochs):
         # Run one epoch
         logging.info("Epoch {}/{}".format(epoch + 1, params.num_epochs))
@@ -185,7 +191,8 @@ if __name__ == '__main__':
 
     # Define the model and optimizer
     model = net.Net(params).cuda() if params.cuda else net.Net(params)
-    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
+    params.weight_decay = 0 if 'weight_decay' not in params.dict.keys() else params.weight_decay
+    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate, weight_decay = params.weight_decay)
 
     # fetch loss function and metrics
     loss_fn = net.loss_fn
