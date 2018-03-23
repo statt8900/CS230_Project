@@ -1,0 +1,10 @@
+{
+    "num_epochs": 10, 
+    "save_summary_steps": 100, 
+    "num_workers": 4, 
+    "learning_rate": 1.3253096991886658e-05, 
+    "num_layers": 3, 
+    "batch_size": 32, 
+    "num_channels": 32, 
+    "num_filters": 100
+}

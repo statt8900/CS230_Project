@@ -65,10 +65,12 @@ def plot_loss(model_dir):
         total_train_loss_mean[i+1] = new_entry
 
     fig, ax = plt.subplots()
-    ax.plot(total_val_loss,color = 'r',label = 'Validation MSE')
     ax.plot(total_train_loss,c = 'g', label = 'Training MSE')
+    ax.plot(total_val_loss,color = 'r',label = 'Validation MSE')
+
     # ax.scatter(range(len(total_train_loss_mean)),total_train_loss, c = 'b', s=1, label = 'Validation MSE')
     ax.set_yscale('log')
+    ax.autoscale(enable=True, axis='both', tight=True)
     plt.xlabel('Iterations',fontsize = 14)
     plt.ylabel('Formation Energy MSE (eV/atom)',fontsize = 14)
     plt.legend()
@@ -84,9 +86,13 @@ def parity_plot(model_dir, data_types = ['test']):
                         ,'val'        :'Validation'
                         ,'train'      :'Training'}
 
-    R2_dict         = {'test'         :'0.938'
-                            ,'val'    :'0.937'
-                            ,'train'  :'0.991'}
+    R2_dict         = {'train'         :'0.973'
+                            ,'val'    :'0.938'
+                            ,'test'  :'0.938'}
+    #
+    # R2_dict         = {'test'         :'0.938'
+    #                         ,'val'    :'0.937'
+    #                         ,'train'  :'0.991'}
 
     for data_type, color  in zip(data_types,['r','b','g']):
         test_output = np.load(os.path.join(model_dir,data_type+'_output.npy'))
@@ -96,7 +102,7 @@ def parity_plot(model_dir, data_types = ['test']):
     plt.plot([-5,5],[-5,5],linestyle='--',color='k')
     plt.xlabel('Actual $\\mathrm{E}_\\mathrm{F}$ (eV/atom)',fontsize = font_size_curr)
     plt.ylabel('Predicted $\\mathrm{E}_\\mathrm{F}$ (eV/atom)',fontsize = font_size_curr)
-    plt.title('M-50-3 after 60 epochs', fontsize = font_size_curr+3)
+    plt.title('M-50-3 with weight decay = $10^{-3}$ ', fontsize = font_size_curr-3)
     ax.set_xlim([-4,1])
     ax.set_ylim([-4,1])
     # Plot legend.
@@ -107,7 +113,7 @@ def parity_plot(model_dir, data_types = ['test']):
     lgnd.legendHandles[2]._sizes = [15]
     plt.setp(ax.get_xticklabels(), fontsize=font_size_curr)
     plt.setp(ax.get_yticklabels(), fontsize=font_size_curr)
-    plt.savefig(os.path.join(model_dir,'parity_plot.png'), dpi=1000)
+    plt.savefig(os.path.join(model_dir,'parity_plot.png'), dpi=300)
     # plt.show()
 
 

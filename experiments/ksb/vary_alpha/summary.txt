@@ -1,0 +1,6 @@
+|                                                                         |      loss |       r2 |
+|:------------------------------------------------------------------------|----------:|---------:|
+| /home/ubuntu/Experiments/ksb/vary_alpha/learning_rate_0.000230318303178 | 0.027016  | 0.913358 |
+| /home/ubuntu/Experiments/ksb/vary_alpha/learning_rate_1.32530969919e-05 | 0.0309683 | 0.901944 |
+| /home/ubuntu/Experiments/ksb/vary_alpha/learning_rate_0.00214999166444  | 0.0287122 | 0.907994 |
+| /home/ubuntu/Experiments/ksb/vary_alpha/learning_rate_0.137488470719    | 0.187265  | 0.419027 |

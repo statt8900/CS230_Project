@@ -1,0 +1,43 @@
+2018-03-14 08:07:08,277:INFO: Loading the datasets...
+2018-03-14 08:07:08,288:INFO: - done.
+2018-03-14 08:07:10,723:INFO: Starting training for 10 epoch(s)
+2018-03-14 08:07:10,724:INFO: Epoch 1/10
+2018-03-14 08:15:40,292:INFO: - Train metrics: loss: 0.543 ; r2: -0.144
+2018-03-14 08:16:34,055:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 08:16:34,072:INFO: - Found new lowest loss
+2018-03-14 08:16:34,073:INFO: Epoch 2/10
+2018-03-14 08:25:02,810:INFO: - Train metrics: loss: 0.134 ; r2: 0.342
+2018-03-14 08:25:56,654:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 08:25:56,685:INFO: - Found new lowest loss
+2018-03-14 08:25:56,687:INFO: Epoch 3/10
+2018-03-14 08:34:25,516:INFO: - Train metrics: loss: 0.176 ; r2: 0.421
+2018-03-14 08:35:19,280:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 08:35:19,310:INFO: - Found new lowest loss
+2018-03-14 08:35:19,311:INFO: Epoch 4/10
+2018-03-14 08:43:48,130:INFO: - Train metrics: loss: 0.125 ; r2: 0.357
+2018-03-14 08:44:41,920:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 08:44:41,949:INFO: - Found new lowest loss
+2018-03-14 08:44:41,950:INFO: Epoch 5/10
+2018-03-14 08:53:10,815:INFO: - Train metrics: loss: 0.199 ; r2: 0.364
+2018-03-14 08:54:04,609:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 08:54:04,644:INFO: - Found new lowest loss
+2018-03-14 08:54:04,645:INFO: Epoch 6/10
+2018-03-14 09:02:33,562:INFO: - Train metrics: loss: 0.133 ; r2: 0.401
+2018-03-14 09:03:27,372:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 09:03:27,403:INFO: - Found new lowest loss
+2018-03-14 09:03:27,404:INFO: Epoch 7/10
+2018-03-14 09:11:56,262:INFO: - Train metrics: loss: 0.117 ; r2: 0.394
+2018-03-14 09:12:50,078:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 09:12:50,106:INFO: - Found new lowest loss
+2018-03-14 09:12:50,108:INFO: Epoch 8/10
+2018-03-14 09:21:18,913:INFO: - Train metrics: loss: 0.175 ; r2: 0.473
+2018-03-14 09:22:12,690:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 09:22:12,721:INFO: - Found new lowest loss
+2018-03-14 09:22:12,722:INFO: Epoch 9/10
+2018-03-14 09:30:41,353:INFO: - Train metrics: loss: 0.145 ; r2: 0.434
+2018-03-14 09:31:35,131:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 09:31:35,161:INFO: - Found new lowest loss
+2018-03-14 09:31:35,163:INFO: Epoch 10/10
+2018-03-14 09:40:03,905:INFO: - Train metrics: loss: 0.176 ; r2: 0.447
+2018-03-14 09:40:57,718:INFO: - Eval metrics : loss: 0.187 ; r2: 0.419
+2018-03-14 09:40:57,753:INFO: - Found new lowest loss

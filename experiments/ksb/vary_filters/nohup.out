@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/CS230_Project/search_hyperparams.py", line 5, in <module>
+    import utils
+  File "/home/ubuntu/CS230_Project/utils.py", line 2, in <module>
+    import json, logging, os, shutil, torch, argparse
+ModuleNotFoundError: No module named 'torch'
+/home/ubuntu/anaconda3/envs/pytorch_p27/bin/python: can't open file 'train.py': [Errno 2] No such file or directory
+/home/ubuntu/anaconda3/envs/pytorch_p27/bin/python train.py --model_dir=/home/ubuntu/Experiments/ksb/vary_filters/num_filters_150 --data_dir /home/ubuntu/Datasets/dataset
+Traceback (most recent call last):
+  File "/home/ubuntu/CS230_Project/search_hyperparams.py", line 77, in <module>
+    elif 'filters' in args.hyperparameter: vary_num_filters(args)
+  File "/home/ubuntu/CS230_Project/search_hyperparams.py", line 69, in vary_num_filters
+    launch_training_job(args.parent_dir, args.data_dir, job_name, params)
+  File "/home/ubuntu/CS230_Project/search_hyperparams.py", line 36, in launch_training_job
+    check_call(cmd, shell=True)
+  File "/home/ubuntu/anaconda3/envs/pytorch_p27/lib/python2.7/subprocess.py", line 186, in check_call
+    raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '/home/ubuntu/anaconda3/envs/pytorch_p27/bin/python train.py --model_dir=/home/ubuntu/Experiments/ksb/vary_filters/num_filters_150 --data_dir /home/ubuntu/Datasets/dataset' returned non-zero exit status 2
