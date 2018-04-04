@@ -1,0 +1,36 @@
+2018-03-18 21:40:43,042:INFO: Loading the dataset...
+2018-03-18 21:40:43,045:INFO: - done.
+2018-03-18 21:40:45,501:INFO: Starting evaluation
+2018-03-18 21:41:08,767:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 21:57:34,695:INFO: Loading the dataset...
+2018-03-18 21:57:34,698:INFO: - done.
+2018-03-18 21:57:37,175:INFO: Starting evaluation
+2018-03-18 21:58:03,260:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 21:59:36,104:INFO: Loading the dataset...
+2018-03-18 21:59:36,107:INFO: - done.
+2018-03-18 21:59:38,562:INFO: Starting evaluation
+2018-03-18 22:00:04,787:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 22:12:07,164:INFO: Loading the dataset...
+2018-03-18 22:12:07,167:INFO: - done.
+2018-03-18 22:12:09,645:INFO: Starting evaluation
+2018-03-18 22:12:32,964:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 22:18:57,182:INFO: Loading the dataset...
+2018-03-18 22:18:57,185:INFO: - done.
+2018-03-18 22:18:59,673:INFO: Starting evaluation
+2018-03-18 22:19:22,900:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 22:52:23,810:INFO: Loading the dataset...
+2018-03-18 22:52:23,813:INFO: - done.
+2018-03-18 22:52:26,285:INFO: Starting evaluation
+2018-03-18 22:52:45,040:INFO: - Eval metrics : loss: 0.021 ; r2: 0.937
+2018-03-18 22:57:39,156:INFO: Loading the dataset...
+2018-03-18 22:57:39,159:INFO: - done.
+2018-03-18 22:57:41,640:INFO: Starting evaluation
+2018-03-18 22:58:04,858:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938
+2018-03-18 23:03:14,143:INFO: Loading the dataset...
+2018-03-18 23:03:14,152:INFO: - done.
+2018-03-18 23:03:16,652:INFO: Starting evaluation
+2018-03-18 23:04:28,873:INFO: - Eval metrics : loss: 0.003 ; r2: 0.991
+2018-03-18 23:05:09,274:INFO: Loading the dataset...
+2018-03-18 23:05:09,277:INFO: - done.
+2018-03-18 23:05:11,734:INFO: Starting evaluation
+2018-03-18 23:05:35,046:INFO: - Eval metrics : loss: 0.018 ; r2: 0.938

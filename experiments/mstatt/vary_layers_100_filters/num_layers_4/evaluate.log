@@ -1,0 +1,8 @@
+2018-03-18 23:16:00,973:INFO: Loading the dataset...
+2018-03-18 23:16:00,979:INFO: - done.
+2018-03-18 23:16:04,901:INFO: Starting evaluation
+2018-03-18 23:20:02,848:INFO: - Eval metrics : loss: 0.023 ; r2: 0.917
+2018-03-19 00:01:08,027:INFO: Loading the train dataset...
+2018-03-19 00:01:08,044:INFO: - done.
+2018-03-19 00:01:11,542:INFO: Starting evaluation on the train dataset
+2018-03-19 00:14:15,919:INFO: - Eval metrics : loss: 0.015 ; r2: 0.941

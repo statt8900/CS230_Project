@@ -6,11 +6,20 @@ The convolution operation has proven to be an excellent feature extractor in the
 
 Guide to files:
 
-CNN_input.py    - Creation of PyTorch Dataset from sqlite3 database
+build_dataset.py   - functions for building the datasets
 
-convolution.py  - Creation of PyTorch.nn Modules for chemical convolution   operations
+evalauate.py       - functions for evaluating models
 
-model_train.py  - Creation of PyTorchTrainer object for model training and hyperparameter tuning
+train.py           - functions for training models
+
+synthesize_results.py - functions for analyzing many models performance
+
+model/             - folder containing functions for the neural net models
+    data_loader.py    - functions for making and fetching pytorch dataloaders
+
+    modules.py        - custom pytorch.nn Modules
+
+    net.py            - file containing the actual model
 
 
 misc/           - Folder containing miscellaneous functions for the project
@@ -23,3 +32,5 @@ data/           - Folder containing modules related to creating, filling,   upda
     database_management.py - contains functions for interfacing with the sqlite3 database
 
     MP_query -  contains functions for querying the MAterials Project and filling the database
+
+experiments/    - Folder containing the different experiments run on the model

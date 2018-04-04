@@ -1,0 +1,7 @@
+|                                                                      |      loss |       r2 |
+|:---------------------------------------------------------------------|----------:|---------:|
+| /home/ubuntu/Experiments/mstatt/vary_layers_150_filters/num_layers_1 | 0.0221317 | 0.921837 |
+| /home/ubuntu/Experiments/mstatt/vary_layers_150_filters/num_layers_3 | 0.0230275 | 0.91745  |
+| /home/ubuntu/Experiments/mstatt/vary_layers_150_filters/num_layers_2 | 0.031021  | 0.890672 |
+| /home/ubuntu/Experiments/mstatt/vary_layers_150_filters/num_layers_5 | 0.0196495 | 0.931843 |
+| /home/ubuntu/Experiments/mstatt/vary_layers_150_filters/num_layers_4 | 0.0208271 | 0.926801 |

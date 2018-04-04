@@ -1,0 +1,5 @@
+|                                                              |      loss |       r2 |
+|:-------------------------------------------------------------|----------:|---------:|
+| /home/ubuntu/Experiments/mstatt/vary_filters/num_filters_50  | 0.0263074 | 0.916235 |
+| /home/ubuntu/Experiments/mstatt/vary_filters/num_filters_100 | 0.0259877 | 0.9171   |
+| /home/ubuntu/Experiments/mstatt/vary_filters/num_filters_150 | 0.0268492 | 0.91441  |

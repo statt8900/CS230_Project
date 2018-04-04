@@ -1,0 +1,4 @@
+|                                                                  |      loss |       r2 |
+|:-----------------------------------------------------------------|----------:|---------:|
+| /home/ubuntu/Experiments/mstatt/good_models/50_filters_3_layers  | 0.0209568 | 0.936636 |
+| /home/ubuntu/Experiments/mstatt/good_models/100_filters_3_layers | 0.0237865 | 0.924497 |

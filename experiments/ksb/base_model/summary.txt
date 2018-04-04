@@ -1,0 +1,6 @@
+|                                                                         |       loss |
+|:------------------------------------------------------------------------|-----------:|
+| /home/ubuntu/Experiments/ksb/base_model                                 | 0.0270353  |
+| /home/ubuntu/Experiments/ksb/base_model/learning_rate_5.90197099371e-06 | 0.0260656  |
+| /home/ubuntu/Experiments/ksb/base_model/learning_rate_0.00138197890322  | 0.00428076 |
+| /home/ubuntu/Experiments/ksb/base_model/learning_rate_7.32943914632e-06 | 0.0242869  |

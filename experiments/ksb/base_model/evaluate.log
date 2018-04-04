@@ -1,0 +1,9 @@
+2018-03-12 23:10:19,372:INFO: Creating the dataset...
+2018-03-12 23:10:19,386:INFO: - done.
+2018-03-12 23:10:42,050:INFO: Creating the dataset...
+2018-03-12 23:10:42,053:INFO: - done.
+2018-03-12 23:10:44,883:INFO: Starting evaluation
+2018-03-12 23:11:26,508:INFO: Creating the dataset...
+2018-03-12 23:11:26,511:INFO: - done.
+2018-03-12 23:11:28,842:INFO: Starting evaluation
+2018-03-12 23:12:36,325:INFO: - Eval metrics : loss: 0.024
