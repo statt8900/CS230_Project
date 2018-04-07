@@ -42,7 +42,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
             # move to GPU if available
 
             # convert to torch Variables
-            (node_property_tensor, connectivity_tensor, bond_property_tensor, mask_atom_tensor) = train_batch
+            (node_property_tensor, connectivity_tensor, bond_property_tensor, mask_atom_tensor, input_ids) = train_batch
             labels_batch_var                = Variable(labels_batch)
             node_property_tensor_var        = Variable(node_property_tensor)
             connectivity_tensor_var         = Variable(connectivity_tensor)
@@ -57,7 +57,7 @@ def train(model, optimizer, loss_fn, dataloader, metrics, params):
                 mask_atom_tensor_var        = mask_atom_tensor_var.cuda(async=True)
                 labels_batch_var            = labels_batch_var.cuda(async=True)
 
-            input_tup = (node_property_tensor_var, connectivity_tensor_var, bond_property_tensor_var, mask_atom_tensor_var)
+            input_tup = (node_property_tensor_var, connectivity_tensor_var, bond_property_tensor_var, mask_atom_tensor_var, input_ids)
 
             # compute model output and loss
             output_batch = model(input_tup)

@@ -161,8 +161,8 @@ class SetGlobalVars(nn.Module):
         #Takes in the input from the dataset object
         #Sets the two global variables connectivity_tensor and bond_property_tensor
         #passes the node
-        global connectivity_tensor, bond_property_tensor, mask_atom_tensor
-        (node_property_tensor, connectivity_tensor, bond_property_tensor, mask_atom_tensor) = input_tup
+        global connectivity_tensor, bond_property_tensor, mask_atom_tensor, input_ids
+        (node_property_tensor, connectivity_tensor, bond_property_tensor, mask_atom_tensor, input_ids) = input_tup
         return node_property_tensor
 
 

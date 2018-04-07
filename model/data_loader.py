@@ -47,7 +47,9 @@ class DFTNetDataset(Dataset):
         sample_input, sample_label = torch.load(filename)
         if self.transform:
             sample_input = self.transform(sample_input)
-        return sample_input, sample_label
+        input_id = filename.split('/')[-1].split('.')[0]
+        sample_input_with_id = (sample_input[0], sample_input[1], sample_input[2], sample_input[3], input_id)
+        return sample_input_with_id, sample_label
 
 
 def fetch_dataloader(types, data_dir, params):
