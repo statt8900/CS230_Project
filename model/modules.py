@@ -143,6 +143,47 @@ class ChemConv(nn.Module):
 
         return new_node_property_tensor
 
+
+########## Residual FC Layers #############
+
+class ResidualLayer(nn.Module):
+    # def __init__(self, n_neurons, activation_funcion = nn.ReLU(inplace=True)):
+    def __init__(self, n_neurons):
+        super(ResidualLayer, self).__init__()
+        self.linear1 = nn.Linear(n_neurons, n_neurons)
+        # self.activation_funcion = activation_funcion
+
+    def forward(self, x):
+        residual = x
+
+        out = self.linear1(x)
+        out += residual
+        # out = self.activation_funcion(out)
+
+        return out
+
+class ResFCBlock(nn.Module):
+    def __init__(self, n_neurons, n_units, activation_fn = nn.ReLU(inplace=True), bias = True):
+        super(ResFCBlock, self).__init__()
+        self.n_neurons = n_neurons
+        self.n_units = n_units
+        self.activation_fn = activation_fn
+        self.linear = nn.Linear(n_neurons, n_neurons, bias = bias)
+
+    def forward(self, x):
+        out = x
+        for i in range(self.n_units):
+            residual = out
+            out = self.linear(out)
+            out = self.activation_fn(out)
+            out = self.linear(out)
+            out += residual
+            out = self.activation_fn(out)
+
+        return out
+
+
+
 ###########################
 #SetConnectivity NN module
 #--------------------------

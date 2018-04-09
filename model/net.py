@@ -21,7 +21,6 @@ from CS230_Project.model import modules as custom_nn
 filter_length = 13
 ###############################
 
-
 class Net(nn.Module):
     """
     Neural Net
@@ -33,6 +32,8 @@ class Net(nn.Module):
             params: (Params) contains model parameters
         """
         super(Net, self).__init__()
+        self.save_activations = params.save_activations
+
 
         #Set Global variables
         self.setglobals     = custom_nn.SetGlobalVars()
@@ -63,15 +64,29 @@ class Net(nn.Module):
 
         Note: the dimensions after each step are provided
         """
+        if self.save_activations:
+            activations_batch = {}
+
         out     =   self.setglobals(batch_input)
         out     =   self.chemconv1(out)
         out     =   self.chemresblock1(out)
+        if self.save_activations:
+            activations_batch['d50'] = out
         out     =   self.fc1(out)
+        if self.save_activations:
+            activations_batch['d30'] = out
         out     =   self.relu1(out)
         out     =   self.fc2(out)
+        if self.save_activations:
+            activations_batch['d1'] = out
         out     =   self.average(out)
 
-        return out
+        if not self.save_activations:
+            return out
+        else:
+            return out, activations_batch
+
+
 
 loss_fn = torch.nn.MSELoss()
 

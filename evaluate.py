@@ -13,7 +13,7 @@ import model.net as net
 import model.data_loader as data_loader
 
 
-def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False):
+def evaluate(model, loss_fn, dataloader, metrics, params):
     """Evaluate the model on `num_steps` batches.
 
     Args:
@@ -33,9 +33,13 @@ def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False
     test_labels = np.array([])
     test_output = np.array([])
     test_ids = np.char.array([])
+    if params.save_activations:
+        total_samples = len(dataloader.dataset)
+        test_activations_50 = torch.zeros((total_samples, 100, 50))
+        test_activations_30 = torch.zeros((total_samples, 100, 30))
+        test_activations_1 = torch.zeros((total_samples, 100, 1))
     # compute metrics over the dataset
-    for data_batch, labels_batch in dataloader:
-
+    for batch_index, (data_batch, labels_batch) in enumerate(dataloader):
         # convert to torch Variables
         (node_property_tensor, connectivity_tensor, bond_property_tensor, mask_atom_tensor, input_ids) = data_batch
         labels_batch_var                = Variable(labels_batch)
@@ -43,6 +47,8 @@ def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False
         connectivity_tensor_var         = Variable(connectivity_tensor)
         bond_property_tensor_var        = Variable(bond_property_tensor)
         mask_atom_tensor_var            = Variable(mask_atom_tensor)
+
+        current_batch_size = len(node_property_tensor_var)
 
         if params.cuda:
             node_property_tensor_var    = node_property_tensor_var.cuda(async=True)
@@ -54,7 +60,10 @@ def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False
         input_tup = (node_property_tensor_var, connectivity_tensor_var, bond_property_tensor_var, mask_atom_tensor_var, input_ids)
 
         # compute model output and loss
-        output_batch = model(input_tup)
+        if not params.save_activations:
+            output_batch = model(input_tup)
+        else:
+            output_batch, activations_batch = model(input_tup)
         loss = loss_fn(output_batch, labels_batch_var)
 
         # extract data from torch Variable, move to cpu, convert to numpy arrays
@@ -65,6 +74,14 @@ def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False
         test_labels = np.append(test_labels, labels_batch)
         for input_id in input_ids:
             test_ids = np.append(test_ids, input_id)
+
+        if params.save_activations:
+            # print activations_batch['d50'].data.shape
+            # print mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d50'].data)
+            # asd0
+            test_activations_50[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d50'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d50'].data))
+            test_activations_30[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d30'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d30'].data))
+            test_activations_1[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d1'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d1'].data))
 
         # compute all metrics on this batch
         summary_batch = {metric: metrics[metric](output_batch, labels_batch)
@@ -77,10 +94,16 @@ def evaluate(model, loss_fn, dataloader, metrics, params, error_analysis = False
     metrics_string = " ; ".join("{}: {:05.3f}".format(k, v) for k, v in metrics_mean.items())
     logging.info("- Eval metrics : " + metrics_string)
 
-    if error_analysis:
+    if params.error_analysis:
         np.save(params.model_dir + 'test_labels', test_labels)
         np.save(params.model_dir + 'test_output', test_output)
         np.save(params.model_dir + 'test_ids', test_ids)
+
+    if params.save_activations:
+        np.save(params.model_dir + 'test_ids', test_ids)
+        torch.save(test_activations_50, params.model_dir + 'test_activations_50.torch')
+        torch.save(test_activations_30, params.model_dir + 'test_activations_30.torch')
+        torch.save(test_activations_1, params.model_dir + 'test_activations_1.torch')
 
     return metrics_mean
 
@@ -92,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_type', default='test', help="dataset to evaluate (test, val, train)")
     parser.add_argument('--batch_size', default=None, help="batch_size for evaluation will default to params.json value")
     parser.add_argument('--error_analysis', default=True, help="Set to 'True' to save a list of largest outliers")
+    parser.add_argument('--save_activations', default=False, help="Set to 'True' to save the activations")
     args   = parser.parse_args()
     params = utils.Params(join(args.model_dir, 'params.json'))
 
@@ -99,6 +123,8 @@ if __name__ == '__main__':
     params.cuda = torch.cuda.is_available()     # use GPU is available
     params.data_dir = args.data_dir
     params.model_dir = args.model_dir
+    params.error_analysis = args.error_analysis
+    params.save_activations = args.save_activations
 
     # Set the random seed for reproducible experiments
     torch.manual_seed(230)
@@ -130,7 +156,7 @@ if __name__ == '__main__':
     utils.load_checkpoint(join(args.model_dir, args.restore_file + '.pth.tar'), model)
 
     # Evaluate
-    test_metrics = evaluate(model, loss_fn, test_dl, metrics, params, error_analysis=args.error_analysis)
+    test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
     save_path = join(args.model_dir, "metrics_{}_{}.json".format(args.data_type,args.restore_file))
     utils.save_dict_to_json(test_metrics, save_path)
 
