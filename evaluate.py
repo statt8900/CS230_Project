@@ -86,11 +86,11 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
                 if not os.path.isdir(save_path):
                     os.mkdir(save_path)
 
-                activations = torch.mul(activations_tensor, mask_atom_tensor.unsqueeze(2).expand_as(activations_tensor))
+                activations = torch.mul(activations_tensor, mask_atom_tensor_var.data.unsqueeze(2).expand_as(activations_tensor))
 
                 for i, input_id in enumerate(input_ids):
                     save_file = os.path.join(save_path, input_id + '.torch')
-                    save_tuple = ((activations[i], connectivity_tensor, bond_property_tensor, mask_atom_tensor), (output_batch.data[i], labels_batch[i]))
+                    save_tuple = ((activations[i].cpu(), connectivity_tensor, bond_property_tensor, mask_atom_tensor), (output_batch.cpu().data[i], labels_batch[i])
                     torch.save(save_tuple, save_file)
 
             for input_id in input_ids:
