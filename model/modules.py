@@ -57,7 +57,7 @@ class ChemResBlock(nn.Module):
     def forward(self, input):
         #Iterate through each of the ChemConv layers
         output = input
-        for conv_layer in self.conv_layers:
+        for i, conv_layer in enumerate(self.conv_layers):
             #Apply first of two ChemConv layers
             output = conv_layer(output)
             #Feed output into activiation function
@@ -67,7 +67,8 @@ class ChemResBlock(nn.Module):
             #Add input to this iteration to the output
             output += input
             #Apply second activation function
-            output = self.activation_fn(output)
+            if not i == len(self.conv_layers)-1:
+                output = self.activation_fn(output)
         return output
 
 ###########################
@@ -162,6 +163,16 @@ class ResidualLayer(nn.Module):
 
         return out
 
+class Mask(nn.Module):
+    def __init__(self):
+        super(Mask, self).__init__()
+
+    def forward(self, x):
+        global mask_atom_tensor
+        out = x*mask_atom_tensor.unsqueeze(2)
+        return out
+
+
 class ResFCBlock(nn.Module):
     def __init__(self, n_neurons, n_units, activation_fn = nn.ReLU(inplace=True), bias = True):
         super(ResFCBlock, self).__init__()
@@ -219,9 +230,7 @@ class Average(nn.Module):
         super(Average, self).__init__()
 
     def forward(self, input):
-        global mask_atom_tensor
-        filtered_input = input*mask_atom_tensor.unsqueeze(2)
-        return torch.mean(filtered_input,dim=1)
+        return torch.mean(input,dim=1)
         # return torch.mean(input,1)
 
 # class AverageFunction(Function):

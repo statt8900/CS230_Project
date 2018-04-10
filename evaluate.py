@@ -11,6 +11,7 @@ from torch.autograd import Variable
 import utils
 import model.net as net
 import model.data_loader as data_loader
+import os
 
 
 def evaluate(model, loss_fn, dataloader, metrics, params):
@@ -30,14 +31,24 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
 
     # summary for current eval loop
     summ = []
-    test_labels = np.array([])
-    test_output = np.array([])
-    test_ids = np.char.array([])
+    labels = np.array([])
+    output = np.array([])
+    ids = np.char.array([])
     if params.save_activations:
+        activations_path = os.path.join(params.model_dir, 'activations')
+        if not os.path.isdir(activations_path):
+            os.mkdir(activations_path)
+
+        activations_save_path = os.path.join(activations_path, params.data_type)
+        if not os.path.isdir(activations_save_path):
+            os.mkdir(activations_save_path)
+
+        '''for saving all in one file
         total_samples = len(dataloader.dataset)
-        test_activations_50 = torch.zeros((total_samples, 100, 50))
-        test_activations_30 = torch.zeros((total_samples, 100, 30))
-        test_activations_1 = torch.zeros((total_samples, 100, 1))
+        activations_50 = torch.zeros((total_samples, 100, params.num_filters))
+        activations_30 = torch.zeros((total_samples, 100, 30))
+        activations_1 = torch.zeros((total_samples, 100, 1))
+        '''
     # compute metrics over the dataset
     for batch_index, (data_batch, labels_batch) in enumerate(dataloader):
         # convert to torch Variables
@@ -66,22 +77,39 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
             output_batch, activations_batch = model(input_tup)
         loss = loss_fn(output_batch, labels_batch_var)
 
+        if params.save_activations:
+            activations_batch['original_node_properties'] = node_property_tensor_var
+            for key, activations_var in activations_batch.items():
+                activations_tensor = activations_var.data
+
+                save_path = os.path.join(activations_save_path, key)
+                if not os.path.isdir(save_path):
+                    os.mkdir(save_path)
+
+                activations = torch.mul(activations_tensor, mask_atom_tensor.unsqueeze(2).expand_as(activations_tensor))
+
+                for i, input_id in enumerate(input_ids):
+                    save_file = os.path.join(save_path, input_id + '.torch')
+                    save_tuple = ((activations[i], connectivity_tensor, bond_property_tensor, mask_atom_tensor), (output_batch.data[i], labels_batch[i]))
+                    torch.save(save_tuple, save_file)
+
+            for input_id in input_ids:
+                save_50_path = os.path.join(activations_save_path, '50')
+
+            '''for saving all in one file
+            activations_50[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d_num_filters'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d_num_filters'].data))
+            activations_30[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d30'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d30'].data))
+            activations_1[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d1'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d1'].data))
+            '''
+
         # extract data from torch Variable, move to cpu, convert to numpy arrays
         output_batch = output_batch.data.cpu().numpy()
         labels_batch = labels_batch_var.data.cpu().numpy()
 
-        test_output = np.append(test_output, output_batch)
-        test_labels = np.append(test_labels, labels_batch)
+        output = np.append(output, output_batch)
+        labels = np.append(labels, labels_batch)
         for input_id in input_ids:
-            test_ids = np.append(test_ids, input_id)
-
-        if params.save_activations:
-            # print activations_batch['d50'].data.shape
-            # print mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d50'].data)
-            # asd0
-            test_activations_50[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d50'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d50'].data))
-            test_activations_30[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d30'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d30'].data))
-            test_activations_1[batch_index:batch_index+current_batch_size,:,:] = torch.mul(activations_batch['d1'].data, mask_atom_tensor.unsqueeze(2).expand_as(activations_batch['d1'].data))
+            ids = np.append(ids, input_id)
 
         # compute all metrics on this batch
         summary_batch = {metric: metrics[metric](output_batch, labels_batch)
@@ -95,15 +123,25 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
     logging.info("- Eval metrics : " + metrics_string)
 
     if params.error_analysis:
-        np.save(params.model_dir + 'test_labels', test_labels)
-        np.save(params.model_dir + 'test_output', test_output)
-        np.save(params.model_dir + 'test_ids', test_ids)
+        error_analysis_path = os.path.join(params.model_dir, 'error_analysis')
+        if not os.path.isdir(error_analysis_path):
+            os.mkdir(error_analysis_path)
 
+        save_path = os.path.join(error_analysis_path, params.data_type)
+        if not os.path.isdir(save_path):
+            os.mkdir(save_path)
+
+    if params.error_analysis:
+        np.save(os.path.join(save_path, 'ids'), ids)
+        np.save(os.path.join(save_path, 'labels'), labels)
+        np.save(os.path.join(save_path, 'output'), output)
+
+    '''for saving all in one file
     if params.save_activations:
-        np.save(params.model_dir + 'test_ids', test_ids)
-        torch.save(test_activations_50, params.model_dir + 'test_activations_50.torch')
-        torch.save(test_activations_30, params.model_dir + 'test_activations_30.torch')
-        torch.save(test_activations_1, params.model_dir + 'test_activations_1.torch')
+        torch.save(activations_50, os.path.join(save_path, 'activations_50.torch'))
+        torch.save(activations_30, os.path.join(save_path, 'activations_30.torch'))
+        torch.save(activations_1, os.path.join(save_path, 'activations_1.torch'))
+    '''
 
     return metrics_mean
 
@@ -121,6 +159,7 @@ if __name__ == '__main__':
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()     # use GPU is available
+    params.data_type = args.data_type
     params.data_dir = args.data_dir
     params.model_dir = args.model_dir
     params.error_analysis = args.error_analysis
@@ -159,12 +198,3 @@ if __name__ == '__main__':
     test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
     save_path = join(args.model_dir, "metrics_{}_{}.json".format(args.data_type,args.restore_file))
     utils.save_dict_to_json(test_metrics, save_path)
-
-    if args.error_analysis:
-        targets = np.load(params.model_dir + 'test_labels.npy')
-        predictions = np.load(params.model_dir + 'test_output.npy')
-        ids = np.load(params.model_dir + 'test_ids.npy')
-        absolute_errors = np.abs(targets - predictions)
-        error_list = zip(ids, absolute_errors, targets, predictions)
-        error_list.sort(key=lambda x:x[1], reverse=True)
-        print error_list[:20]

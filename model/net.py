@@ -42,9 +42,12 @@ class Net(nn.Module):
         self.chemconv1      = custom_nn.ChemConv(7,params.num_filters,filter_length)
         self.chemresblock1  = custom_nn.ChemResBlock(params.num_layers,params.num_filters,filter_length,nn.ReLU(inplace = True))
 
+        # Mask Layer
+        self.mask = custom_nn.Mask()
+
         # 2 fully connected layers to transform the output of the convolution layers to the final output
         self.fc1            = nn.Linear(params.num_filters,30, bias=True)
-        self.relu1          = nn.ReLU(inplace = True)
+        self.relu          = nn.ReLU(inplace = True)
         self.fc2            = nn.Linear(30,1, bias=True)
 
         #Average layer to determine average formation_energy_per_atom
@@ -71,20 +74,75 @@ class Net(nn.Module):
         out     =   self.chemconv1(out)
         out     =   self.chemresblock1(out)
         if self.save_activations:
-            activations_batch['d50'] = out
+            out = self.mask(out)
+            activations_batch['d_num_filters'] = out
+
+        out = self.relu(out)
         out     =   self.fc1(out)
+
         if self.save_activations:
+            out = self.mask(out)
             activations_batch['d30'] = out
-        out     =   self.relu1(out)
+
+        out     =   self.relu(out)
         out     =   self.fc2(out)
+        out = self.mask(out)
+
         if self.save_activations:
             activations_batch['d1'] = out
+
         out     =   self.average(out)
 
         if not self.save_activations:
             return out
         else:
             return out, activations_batch
+
+
+class ErrorNet(nn.Module):
+    """
+    Neural Net
+    """
+
+    def __init__(self, params):
+        """
+        Args:
+            params: (Params) contains model parameters
+        """
+        super(ErrorNet, self).__init__()
+        self.n_neurons = params.n_neurons
+        self.n_res_units = params.n_res_units
+        self.input_size = params.input_size
+
+        self.fc1            = nn.Linear(self.input_size,self.n_neurons, bias=True)
+        self.activation_fn  = nn.ReLU(inplace = True)
+        self.resfcblock     = custom_nn.ResFCBlock(n_neurons=self.n_neurons, n_units=self.n_res_units, activation_fn = self.activation_fn, bias = True)
+        self.fc_last        = nn.Linear(self.n_neurons, 2, bias=True)
+
+        #Average layer to determine average formation_energy_per_atom
+        self.average        = custom_nn.Average()
+
+
+    def forward(self, batch_input):
+        """
+        This function defines how we use the components of our network to operate on an input batch.
+
+        Args:
+            s: (Variable) contains a batch of input tuples.
+                Each tuple contains
+
+        Returns:
+            out: (Variable) dimension batch_size x 6 with the log probabilities for the labels of each image.
+
+        Note: the dimensions after each step are provided
+        """
+        out = self.fc1(batch_input)
+        out = self.activation_fn(out)
+        out = self.resfcblock(out)
+        out = self.fc_last(out)
+        out = self.average(out)
+
+        return out
 
 
 
