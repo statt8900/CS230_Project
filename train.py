@@ -8,15 +8,80 @@ from os.path import join
 
 # Internal Modules
 import utils
-import model.net as net
+# import model.net as net
+import model.net as models
+import model.loss_functions as loss_functions
+import model.metrics as metrics_module
 import model.data_loader as data_loader
-from evaluate import evaluate
+from evaluate import evaluate, evaluate_error_net
 
 ##############################################################################
 """
 Train the model
 """
 ##############################################################################
+
+def train_error_net(model, optimizer, loss_fn, data_loader, metrics, params):
+    # set model to training mode
+    model.train()
+
+    # summary for current training loop and a running average object for loss
+    summ = []
+    loss_avg = utils.RunningAverage()
+    loss_array = []
+    # Use tqdm for progress bar
+    with tqdm(total=len(data_loader)) as t:
+        for i, (train_batch, labels_batch) in enumerate(data_loader):
+            # move to GPU if available
+
+            # convert to torch Variables
+            variables = []
+            for input_tensor in train_batch:
+                variables.append(Variable(input_tensor))
+            input_var = tuple(variables)
+
+            labels_var = Variable(labels_batch)
+
+
+            # compute model output and loss
+            batch_output = model(input_var)
+            loss = loss_fn(batch_output, labels_var)
+            # clear previous gradients, compute gradients of all variables wrt loss
+            optimizer.zero_grad()
+            loss.backward()
+
+            # performs updates using calculated gradients
+            optimizer.step()
+
+            ### Evaluate summaries only once in a while
+            if i % params.save_summary_steps == 0:
+                ### extract data from torch Variable, move to cpu, convert to numpy arrays
+                # output_batch = batch_output.data.cpu().numpy()
+                # absolute_errors = torch.abs(labels_var[0].data - labels_var[1].data)
+                # labels_batch = absolute_errors.cpu().numpy()
+                ### extract data from torch Variable, move to cpu, convert to numpy arrays
+                batch_output_npy = batch_output.data.cpu().numpy()
+                labels_batch_npy = labels_var.data.cpu().numpy()
+
+                # compute all metrics on this batch
+                summary_batch = {metric:metrics[metric](batch_output_npy, labels_batch_npy)
+                                 for metric in metrics}
+                summary_batch['loss'] = loss.data[0]
+                summ.append(summary_batch)
+
+            # update the average loss
+            loss_avg.update(loss.data[0])
+            loss_array.append(loss.data[0])
+
+            t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
+            t.update()
+
+    # compute mean of all metrics in summary
+    metrics_mean = {metric:np.mean([x[metric] for x in summ]) for metric in summ[0]}
+    metrics_string = " ; ".join("{}: {:05.3f}".format(k, v) for k, v in metrics_mean.items())
+    logging.info("- Train metrics: " + metrics_string)
+    return loss_array
+
 def train(model, optimizer, loss_fn, dataloader, metrics, params):
     """Train the model on `num_steps` batches
     Args:
@@ -129,11 +194,17 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
         logging.info("Epoch {}/{}".format(epoch + 1, params.num_epochs))
 
         # compute number of batches in one epoch (one full pass over the training set)
-        loss_array          =  train(model, optimizer, loss_fn, train_dataloader, metrics, params)
+        if params.train_error_net:
+            loss_array      =  train_error_net(model, optimizer, loss_fn, train_dataloader, metrics, params)
+        else:
+            loss_array      =  train(model, optimizer, loss_fn, train_dataloader, metrics, params)
         total_train_loss    = np.append(total_train_loss,loss_array)
 
         # Evaluate for one epoch on validation set
-        val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
+        if params.train_error_net:
+            val_metrics = evaluate_error_net(model, loss_fn, val_dataloader, metrics, params)
+        else:
+            val_metrics = evaluate(model, loss_fn, val_dataloader, metrics, params)
 
         val_loss = val_metrics['loss']
         is_best  = val_loss <= best_val_loss
@@ -165,9 +236,29 @@ def train_and_evaluate(model, train_dataloader, val_dataloader, optimizer, loss_
 if __name__ == '__main__':
 
     # Load the parameters from json file
+    parser = utils.parser
+    parser.add_argument('--data_type', default='train', help="dataset to evaluate (test, val, train)")
+    parser.add_argument('--save_activations', default=False, help="Set to 'True' to save the activations")
+    parser.add_argument('--error_analysis', default=True, help="Set to 'True' to save a list of largest outliers")
+    parser.add_argument('--train_error_net', default=False, help="Set to 'True' to use the train_error_net function")
     args = utils.parser.parse_args()
 
+
     params = utils.Params(join(args.model_dir, 'params.json'))
+    params = utils.get_defaults(params, args)
+    # params.save_activations = args.save_activations
+    # params.error_analysis = args.error_analysis
+    # params.data_type = args.data_type
+    # if args.model_dir:
+    #     params.model_dir = args.model_dir
+    # if args.data_dir:
+    #     params.data_dir = args.data_dir
+    # if 'model_name' not in params.dict.keys():
+    #     params.model_name = 'Net'
+    # if 'loss_fn_name' not in params.dict.keys():
+    #     params.loss_fn_name = 'MSELoss'
+    # if 'metrics_name' not in params.dict.keys():
+    #     params.metrics_name = 'metrics'
 
     # use GPU if available
     params.cuda = torch.cuda.is_available()
@@ -183,23 +274,41 @@ if __name__ == '__main__':
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    dataloaders = data_loader.fetch_dataloader(['train', 'val'], args.data_dir, params)
-    train_dl    = dataloaders['train']
-    val_dl      = dataloaders['val']
+    # if params.train_error_net == True:
+    #     dataloaders = data_loader.fetch_dataloader(['val', 'test'], params)
+    #     train_dl    = dataloaders['val']
+    #     val_dl      = dataloaders['test']
+    # else:
+    #     dataloaders = data_loader.fetch_dataloader(['train', 'val'], params)
+    #     train_dl    = dataloaders['train']
+    #     val_dl      = dataloaders['val']
+
+    dataloaders = data_loader.fetch_dataloader(['val', 'test'], params)
+    train_dl    = dataloaders['val']
+    val_dl      = dataloaders['test']
+
 
     logging.info("- done.")
 
     # Define the model and optimizer
-    model = net.Net(params).cuda() if params.cuda else net.Net(params)
+    # model = net.Net(params).cuda() if params.cuda else net.Net(params)
+    model_class = getattr(models, params.model_name)
+    model = model_class(params)
+    if params.cuda:
+        model.cuda()
+    # model = net.Net(params).cuda() if params.cuda else net.Net(params)
     params.weight_decay = 0 if 'weight_decay' not in params.dict.keys() else params.weight_decay
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate, weight_decay = params.weight_decay)
 
     # fetch loss function and metrics
-    loss_fn = net.loss_fn
-    metrics = net.metrics
+    loss_fn = getattr(loss_functions, params.loss_fn_name)
+    # loss_fn_instance = loss_fn(params)
+    loss_fn_instance = loss_fn()
+    metrics = getattr(metrics_module, params.metrics_name)
+
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
 
-    train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn, metrics, params, args.model_dir,
-                       args.restore_file)
+    train_and_evaluate(model, train_dl, val_dl, optimizer, loss_fn_instance, metrics, params, args.model_dir,
+                   args.restore_file)

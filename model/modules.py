@@ -218,9 +218,58 @@ class SetGlobalVars(nn.Module):
         return node_property_tensor
 
 
+class ErrorNetSetGlobals(nn.Module):
+    """
+    First step of the model sets the global variables containing the connectivity
+    information of the input graph as well as the unpadded number of atoms.
+    These global variables are used in every
+    ChemConv layer
+    """
+    def __init__(self):
+        super(ErrorNetSetGlobals, self).__init__()
+
+    def forward(self,input_tup):
+        #Takes in the input from the dataset object
+        #Sets the two global variables connectivity_tensor and bond_property_tensor
+        #passes the node
+        global mask_atom_tensor, input_ids
+        (activations_tensor, mask_atom_tensor) = input_tup
+        return activations_tensor
+
+
 ###########################
 #Average NN module
 #--------------------------
+
+class MaskAndAverage(nn.Module):
+    """
+    Module that takes in an input vector and outputs the average of that vector
+    """
+    def __init__(self):
+        super(MaskAndAverage, self).__init__()
+
+    def forward(self, x):
+        global mask_atom_tensor
+        out = x*mask_atom_tensor.unsqueeze(2)
+        out = out.squeeze(2)
+        out = torch.sum(out, dim=1)
+        n_atoms = torch.sum(mask_atom_tensor, dim=1)
+        out = out/n_atoms
+        return out
+
+class MaskAndSum(nn.Module):
+    """
+    Module that takes in an input vector and outputs the average of that vector
+    """
+    def __init__(self):
+        super(MaskAndSum, self).__init__()
+
+    def forward(self, x):
+        global mask_atom_tensor
+        out = x*mask_atom_tensor.unsqueeze(2)
+        out = out.squeeze(2)
+        out = torch.sum(out, dim=1)
+        return out
 
 class Average(nn.Module):
     """

@@ -135,6 +135,34 @@ def load_checkpoint(checkpoint, model, optimizer=None):
 
     return checkpoint
 
+def get_defaults(params, args):
+    # params.save_activations = args.save_activations
+         # use GPU is available
+    # params.error_analysis = args.error_analysis
+    # params.data_type = args.data_type
+    # params.model_dir = args.model_dir
+    for arg in vars(args):
+        if getattr(args, arg):
+            params.dict[arg] = getattr(args, arg)
+
+    if args.data_dir:
+        params.data_dir = args.data_dir
+    if 'model_name' not in params.dict.keys():
+        params.model_name = 'Net'
+    if 'train_error_net' not in params.dict.keys():
+        params.train_error_net = False
+    if 'save_activations' not in params.dict.keys():
+        params.save_activations = False
+    if 'loss_fn_name' not in params.dict.keys():
+        params.loss_fn_name = 'MSELoss'
+    if 'metrics_name' not in params.dict.keys():
+        params.metrics_name = 'metrics'
+    if 'cuda' not in params.dict.keys():
+        params.cuda = torch.cuda.is_available()
+
+    return params
+
+
 
 ###################################
 # Parse Related
@@ -142,7 +170,8 @@ def load_checkpoint(checkpoint, model, optimizer=None):
 datasets_folder = os.environ['CS230_Datasets']
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'dataset'), help="Directory containing the dataset")
+# parser.add_argument('--data_dir', default=os.path.join(datasets_folder,'dataset'), help="Directory containing the dataset")
+parser.add_argument('--data_dir', default=None, help="Directory containing the dataset")
 parser.add_argument('--model_dir', default='experiments/base_model', help="Directory containing params.json")
 parser.add_argument('--restore_file', default=None,
                     help="Optional, name of the file in --model_dir containing weights to reload before \

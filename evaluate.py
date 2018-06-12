@@ -12,7 +12,47 @@ import utils
 import model.net as net
 import model.data_loader as data_loader
 import os
+import cPickle as pkl
+import model.loss_functions as loss_functions
+import model.metrics as metrics_module
 
+
+def evaluate_error_net(model, loss_fn, dataloader, metrics, params):
+    model.eval()
+    summ = []
+    predictions = torch.FloatTensor([])
+    targets = torch.FloatTensor([])
+    for batch_index, (data_batch, labels_batch) in enumerate(dataloader):
+        variables = []
+        for input_tensor in data_batch:
+            variables.append(Variable(input_tensor))
+        input_var = tuple(variables)
+
+        labels_var = Variable(labels_batch)
+
+        batch_output = model(input_var)
+        loss = loss_fn(batch_output, labels_var)
+        predictions = torch.cat(predictions, batch_output.data)
+        targets = torch.cat(targets, labels_var.data)
+
+        batch_output_npy = batch_output.data.cpu().numpy()
+        labels_batch_npy = labels_var.data.cpu().numpy()
+
+        # compute all metrics on this batch
+        summary_batch = {metric:metrics[metric](batch_output_npy, labels_batch_npy)
+                         for metric in metrics}
+        summary_batch['loss'] = loss.data[0]
+        summ.append(summary_batch)
+
+    metrics_mean = {metric:np.mean([x[metric] for x in summ]) for metric in summ[0]}
+    metrics_string = " ; ".join("{}: {:05.3f}".format(k, v) for k, v in metrics_mean.items())
+    logging.info("- Eval metrics : " + metrics_string)
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(targets.cpu().numpy(), predictions.cpu().numpy())
+    # plt.show()
+
+    return metrics_mean
 
 def evaluate(model, loss_fn, dataloader, metrics, params):
     """Evaluate the model on `num_steps` batches.
@@ -90,7 +130,8 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
 
                 for i, input_id in enumerate(input_ids):
                     save_file = os.path.join(save_path, input_id + '.torch')
-                    save_tuple = ((activations[i].cpu(), connectivity_tensor, bond_property_tensor, mask_atom_tensor), (output_batch.cpu().data[i], labels_batch[i])
+                    # save_tuple = ((activations[i].cpu(), connectivity_tensor[i], bond_property_tensor[i], mask_atom_tensor[i]), (output_batch.data[i].cpu(), labels_batch[i]))
+                    save_tuple = activations[i].cpu()
                     torch.save(save_tuple, save_file)
 
             for input_id in input_ids:
@@ -135,6 +176,12 @@ def evaluate(model, loss_fn, dataloader, metrics, params):
         np.save(os.path.join(save_path, 'ids'), ids)
         np.save(os.path.join(save_path, 'labels'), labels)
         np.save(os.path.join(save_path, 'output'), output)
+        save_dict = {tup[0]: (tup[1], tup[2]) for tup in zip(ids, labels, output)}
+        pkl.dump(save_dict, open(os.path.join(save_path,'dict.pkl'), 'wb'))
+
+    import matplotlib.pyplot as plt
+    plt.plot(labels, output, 'o')
+    plt.show()
 
     '''for saving all in one file
     if params.save_activations:
@@ -155,15 +202,17 @@ if __name__ == '__main__':
     parser.add_argument('--error_analysis', default=True, help="Set to 'True' to save a list of largest outliers")
     parser.add_argument('--save_activations', default=False, help="Set to 'True' to save the activations")
     args   = parser.parse_args()
+
     params = utils.Params(join(args.model_dir, 'params.json'))
+    params = utils.get_defaults(params, args)
 
     # use GPU if available
-    params.cuda = torch.cuda.is_available()     # use GPU is available
-    params.data_type = args.data_type
-    params.data_dir = args.data_dir
-    params.model_dir = args.model_dir
-    params.error_analysis = args.error_analysis
-    params.save_activations = args.save_activations
+    # params.cuda = torch.cuda.is_available()     # use GPU is available
+    # params.data_type = args.data_type
+    # params.data_dir = args.data_dir
+    # params.model_dir = args.model_dir
+    # params.error_analysis = args.error_analysis
+    # params.save_activations = args.save_activations
 
     # Set the random seed for reproducible experiments
     torch.manual_seed(230)
@@ -178,7 +227,7 @@ if __name__ == '__main__':
     # fetch dataloaders
     if not args.batch_size is None:
         params.batch_size = args.batch_size
-    dataloaders = data_loader.fetch_dataloader([args.data_type], args.data_dir, params)
+    dataloaders = data_loader.fetch_dataloader([params.data_type], params)
     test_dl = dataloaders[args.data_type]
 
     logging.info("- done.")
@@ -186,13 +235,14 @@ if __name__ == '__main__':
     # Define the model
     model = net.Net(params).cuda() if params.cuda else net.Net(params)
 
-    loss_fn = net.loss_fn
-    metrics = net.metrics
+    loss_fn = getattr(loss_functions, params.loss_fn_name)
+    metrics = getattr(metrics_module, params.metrics_name)
 
     logging.info("Starting evaluation on the "+args.data_type+" dataset")
 
+
     # Reload weights from the saved file
-    utils.load_checkpoint(join(args.model_dir, args.restore_file + '.pth.tar'), model)
+    utils.load_checkpoint(join(params.model_dir, args.restore_file + '.pth.tar'), model)
 
     # Evaluate
     test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
